@@ -29,20 +29,22 @@ class ConfigScene : public QGraphicsScene
     Q_OBJECT
 
 public:
-    enum Mode { InsertItem, InsertLine, MoveItem };
+    enum Mode { InsertUSite, InsertSite, InsertTrans, MoveItem };
 
-    explicit ConfigScene(QMenu *siteMenu, QMenu *transMenu, QObject *parent = 0);
+    explicit ConfigScene(QMenu *siteMenu, QMenu *transMenu,int xc, int yc, QObject *parent = 0);
     QColor itemColor() const { return myItemColor; }
     QColor lineColor() const { return myLineColor; }
     void setLineColor(const QColor &color);
     void setItemColor(const QColor &color);
 
+    int getGridSize() const { return this->gridSize; }
+    bool getSnap() { return this->snap; }
+    void setSnap(bool dosnap) { snap = dosnap; }
+
 public slots:
     void setMode(Mode mode);
 
 signals:
-    void itemInserted(Site *item);
-    void textInserted(QGraphicsTextItem *item);
     void itemSelected(QGraphicsItem *item);
 
 protected:
@@ -61,6 +63,11 @@ private:
     QGraphicsLineItem *line;
     QColor myItemColor;
     QColor myLineColor;
+    int xcell; // cell x dimension
+    int ycell; // cell y dimension
+    int indx; // index for linking periodic transitions
+    int gridSize;
+    bool snap;
 };
 
 #endif // CONFIGSCENE_H

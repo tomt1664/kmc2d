@@ -2,5 +2,11 @@
     <qresource prefix="/">
         <file>icons/cfilled.png</file>
         <file>icons/cufilled.png</file>
+        <file>icons/uosite.png</file>
+        <file>icons/osite.png</file>
+        <file>icons/trans.png</file>
+        <file>icons/snap.png</file>
+        <file>icons/point.png</file>
+        <file>icons/image.png</file>
     </qresource>
 </RCC>

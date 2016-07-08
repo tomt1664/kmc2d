@@ -12,6 +12,7 @@
 
 #include <QGraphicsPixmapItem>
 #include <QList>
+#include "configscene.h"
 
 QT_BEGIN_NAMESPACE
 class QPixmap;
@@ -34,7 +35,7 @@ class Site : public QGraphicsItem
 public:
     enum { Type = UserType + 15 };
 
-    Site(int stat, QMenu *contextMenu, QGraphicsItem *parent = 0);
+    Site(int stat, int img, QMenu *contextMenu, QGraphicsItem *parent = 0);
 
     void removeTransition(Transition *transition);
     void removeTransitions();
@@ -46,6 +47,7 @@ public:
     void on() { state = 1; }
     void off() { state = 0; }
     int stat() { return state; }
+    int img() { return m_img; }
 
     QRectF boundingRect() const Q_DECL_OVERRIDE;
     QPainterPath shape() const Q_DECL_OVERRIDE;
@@ -59,8 +61,9 @@ private:
     QColor color;
     float energy;  // the potential energy level of the state
     int state;  // the occupation: 0 = unoccupied, 1 = occupied
+    int m_img; // set to 1 if the object is a periodic image
     QMenu *myContextMenu;
-    QList<Transition *> transitions;
+    QList<Transition *> transitions; // list of site transitions
 };
 
 #endif // LATSITE_H

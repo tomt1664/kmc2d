@@ -13,6 +13,7 @@
 #include "mainwindow.h"
 
 #include <QtWidgets>
+#include <QDebug>
 
 const int InsertTextButton = 10;
 
@@ -22,18 +23,30 @@ MainWindow::MainWindow()
     createToolBox();
     createMenus();
 
-    scene = new ConfigScene(siteMenu, transMenu, this);
-    scene->setSceneRect(QRectF(0, 0, 400, 400));
-    scene->setBackgroundBrush(Qt::gray);
+    xcell = 400;
+    ycell = 400;
+
+    scene = new ConfigScene(siteMenu, transMenu, xcell, ycell, this);
+    scene->setSceneRect(QRectF(0, 0, xcell, ycell));
+    scene->setBackgroundBrush(Qt::lightGray);
 
     //draw the simulation cell white on the gray background
     cell = new QGraphicsRectItem;
-    cell->setRect(0, 0, 400, 400);
+    cell->setRect(0, 0, xcell, ycell);
     cell->setBrush(Qt::white);
     cell->setZValue(-2000);
     scene->addItem(cell);
 
-    createToolbars();
+    //draw the periodic area
+    perarea = new QGraphicsRectItem;
+    perarea->setRect(-xcell-10, -ycell-10, 3*xcell+20, 3*ycell+20);
+    perarea->setBrush(Qt::lightGray);
+    perarea->setPen(QPen(Qt::lightGray));
+    perarea->setZValue(-3000);
+    scene->addItem(perarea);
+
+    //draw the periodic cells
+    drawCells();
 
     zoomSlider = new QSlider;
     zoomSlider->setMinimum(0);
@@ -80,108 +93,97 @@ void MainWindow::backgroundButtonGroupClicked(QAbstractButton *button)
     view->update();
 }
 
-void MainWindow::buttonGroupClicked(int id)
-{
-    QList<QAbstractButton *> buttons = buttonGroup->buttons();
-    foreach (QAbstractButton *button, buttons) {
-        if (buttonGroup->button(id) != button)
-            button->setChecked(false);
-    }
-
-    scene->setMode(ConfigScene::InsertItem);
-
-}
 
 void MainWindow::deleteItem()
 {
+    int irem = 0;
     foreach (QGraphicsItem *item, scene->selectedItems()) {
         if (item->type() == Transition::Type) {
             scene->removeItem(item);
             Transition *transition = qgraphicsitem_cast<Transition *>(item);
+            irem = transition->id();
             transition->startItem()->removeTransition(transition);
             transition->endItem()->removeTransition(transition);
             delete item;
         }
     }
 
+    if(irem > 0)
+    {
+        foreach (QGraphicsItem *item, scene->items() ) {
+            if (item->type() == Transition::Type) {
+                Transition *mtransition = qgraphicsitem_cast<Transition *>(item);
+                if(mtransition->id() == irem)
+                {
+                    mtransition->startItem()->removeTransition(mtransition);
+                    mtransition->endItem()->removeTransition(mtransition);
+                    delete mtransition;
+                    break;
+                }
+            }
+        }
+    }
+
     foreach (QGraphicsItem *item, scene->selectedItems()) {
          if (item->type() == Site::Type)
+         {
              qgraphicsitem_cast<Site *>(item)->removeTransitions();
-         scene->removeItem(item);
-         delete item;
-     }
-}
 
-void MainWindow::pointerGroupClicked(int)
-{
-    scene->setMode(ConfigScene::Mode(pointerTypeGroup->checkedId()));
-}
-
-void MainWindow::bringToFront()
-{
-    if (scene->selectedItems().isEmpty())
-        return;
-
-    QGraphicsItem *selectedItem = scene->selectedItems().first();
-    QList<QGraphicsItem *> overlapItems = selectedItem->collidingItems();
-
-    qreal zValue = 0;
-    foreach (QGraphicsItem *item, overlapItems) {
-        if (item->zValue() >= zValue && item->type() == Site::Type)
-            zValue = item->zValue() + 0.1;
+             foreach (QGraphicsItem *child, item->childItems() )
+             {
+                 qgraphicsitem_cast<Site *>(child)->removeTransitions();
+             }
+             scene->removeItem(item);
+             delete item;
+         }
     }
-    selectedItem->setZValue(zValue);
 }
 
-void MainWindow::sendToBack()
+void MainWindow::sceneGroupClicked(int)
 {
-    if (scene->selectedItems().isEmpty())
-        return;
+    scene->setMode(ConfigScene::Mode(sceneGroup->checkedId()));
+}
 
-    QGraphicsItem *selectedItem = scene->selectedItems().first();
-    QList<QGraphicsItem *> overlapItems = selectedItem->collidingItems();
-
-    qreal zValue = 0;
-    foreach (QGraphicsItem *item, overlapItems) {
-        if (item->zValue() <= zValue && item->type() == Site::Type)
-            zValue = item->zValue() - 0.1;
+void MainWindow::toggleImages(bool on)
+{
+    if(on)
+    {
+        pcellc1->setZValue(-4000);
+        pcellc2->setZValue(-4000);
+        pcellc3->setZValue(-4000);
+        pcellc4->setZValue(-4000);
+        pcellc5->setZValue(-4000);
+        pcellc6->setZValue(-4000);
+        pcellc7->setZValue(-4000);
+        pcellc8->setZValue(-4000);
+    } else
+    {
+        pcellc1->setZValue(0);
+        pcellc2->setZValue(0);
+        pcellc3->setZValue(0);
+        pcellc4->setZValue(0);
+        pcellc5->setZValue(0);
+        pcellc6->setZValue(0);
+        pcellc7->setZValue(0);
+        pcellc8->setZValue(0);
     }
-    selectedItem->setZValue(zValue);
 }
 
-
-void MainWindow::itemColorChanged()
+void MainWindow::toggleSnap(bool on)
 {
-    fillAction = qobject_cast<QAction *>(sender());
-    fillColorToolButton->setIcon(createColorToolButtonIcon(
-                                     ":/images/floodfill.png",
-                                     qvariant_cast<QColor>(fillAction->data())));
-    fillButtonTriggered();
-}
-
-void MainWindow::lineColorChanged()
-{
-    lineAction = qobject_cast<QAction *>(sender());
-    lineColorToolButton->setIcon(createColorToolButtonIcon(
-                                     ":/images/linecolor.png",
-                                     qvariant_cast<QColor>(lineAction->data())));
-    lineButtonTriggered();
-}
-
-void MainWindow::fillButtonTriggered()
-{
-    scene->setItemColor(qvariant_cast<QColor>(fillAction->data()));
-}
-
-void MainWindow::lineButtonTriggered()
-{
-    scene->setLineColor(qvariant_cast<QColor>(lineAction->data()));
+    if(on)
+    {
+        scene->setSnap(true);
+    } else
+    {
+        scene->setSnap(false);
+    }
 }
 
 void MainWindow::about()
 {    
     QMessageBox::about(this, tr("About "),
-            tr("<p><b>KMC2D version 0.1</b></p>"
+            tr("<p><b>KMC2D version 0.22</b></p>"
                "<br> "
                "<p>Build date: %1"
                "<br> "
@@ -196,18 +198,79 @@ void MainWindow::about()
 
 void MainWindow::createToolBox()
 {
-    buttonGroup = new QButtonGroup(this);
-    buttonGroup->setExclusive(false);
-    connect(buttonGroup, SIGNAL(buttonClicked(int)),
-            this, SLOT(buttonGroupClicked(int)));
-    QGridLayout *layout = new QGridLayout;
-    layout->addWidget(createCellWidget(tr("Site")), 0, 0);
+    QGridLayout *sceneButtonLayout = new QGridLayout;
 
-    layout->setRowStretch(3, 10);
-    layout->setColumnStretch(2, 10);
+    addUsiteButton = new QToolButton;
+    addUsiteButton->setIcon(QIcon(QPixmap(":/icons/uosite.png")));
+    addUsiteButton->setIconSize(QSize(32, 32));
+    addUsiteButton->setCheckable(true);
+    addUsiteButton->setChecked(true);
+    addUsiteButton->setToolTip("Add unoccupied site");
+
+    addSiteButton = new QToolButton;
+    addSiteButton->setIcon(QIcon(QPixmap(":/icons/osite.png")));
+    addSiteButton->setIconSize(QSize(32, 32));
+    addSiteButton->setCheckable(true);
+    addSiteButton->setChecked(false);
+    addSiteButton->setToolTip("Add occupied site");
+
+    addTransButton = new QToolButton;
+    addTransButton->setIcon(QIcon(QPixmap(":/icons/trans.png")));
+    addTransButton->setIconSize(QSize(32, 32));
+    addTransButton->setCheckable(true);
+    addTransButton->setChecked(false);
+    addTransButton->setToolTip("Add transition");
+
+    selectButton = new QToolButton;
+    selectButton->setIcon(QIcon(QPixmap(":/icons/point.png")));
+    selectButton->setIconSize(QSize(32, 32));
+    selectButton->setCheckable(true);
+    selectButton->setChecked(false);
+    selectButton->setToolTip("Select item");
+
+    snapButton = new QToolButton;
+    snapButton->setIcon(QIcon(QPixmap(":/icons/snap.png")));
+    snapButton->setIconSize(QSize(32, 32));
+    snapButton->setCheckable(true);
+    snapButton->setChecked(false);
+    snapButton->setToolTip("Snap to grid");
+
+    sceneGroup = new QButtonGroup;
+    sceneGroup->setExclusive(true);
+    sceneGroup->addButton(addUsiteButton, int(ConfigScene::InsertUSite));
+    sceneGroup->addButton(addSiteButton, int(ConfigScene::InsertSite));
+    sceneGroup->addButton(addTransButton, int(ConfigScene::InsertTrans));
+    sceneGroup->addButton(selectButton, int(ConfigScene::MoveItem));
+
+    sceneButtonLayout->addWidget(addUsiteButton, 0, 0);
+    sceneButtonLayout->addWidget(addSiteButton, 0, 1);
+    sceneButtonLayout->addWidget(addTransButton, 0, 2);
+    sceneButtonLayout->addWidget(selectButton, 0, 3);
+
+    connect(sceneGroup, SIGNAL(buttonClicked(int)),
+            this, SLOT(sceneGroupClicked(int)));
+
+    imageButton = new QToolButton;
+    imageButton->setIcon(QIcon(QPixmap(":/icons/image.png")));
+    imageButton->setIconSize(QSize(32, 32));
+    imageButton->setCheckable(true);
+    imageButton->setChecked(false);
+
+    sceneButtonLayout->addWidget(imageButton, 1, 0);
+    sceneButtonLayout->addWidget(snapButton, 1, 1);
+
+    connect(imageButton, SIGNAL(toggled(bool)),
+            this, SLOT(toggleImages(bool)));
+    connect(snapButton, SIGNAL(toggled(bool)),this,SLOT(toggleSnap(bool)));
+
+//    QGridLayout *layout = new QGridLayout;
+//    layout->addWidget(createCellWidget(tr("Site")), 0, 0);
+
+//    layout->setRowStretch(3, 10);
+//    layout->setColumnStretch(2, 10);
 
     QWidget *itemWidget = new QWidget;
-    itemWidget->setLayout(layout);
+    itemWidget->setLayout(sceneButtonLayout);
 
     backgroundButtonGroup = new QButtonGroup(this);
     connect(backgroundButtonGroup, SIGNAL(buttonClicked(QAbstractButton*)),
@@ -239,17 +302,6 @@ void MainWindow::createToolBox()
 
 void MainWindow::createActions()
 {
-    toFrontAction = new QAction(QIcon(":/images/bringtofront.png"),
-                                tr("Bring to &Front"), this);
-    toFrontAction->setShortcut(tr("Ctrl+F"));
-    toFrontAction->setStatusTip(tr("Bring item to front"));
-    connect(toFrontAction, SIGNAL(triggered()), this, SLOT(bringToFront()));
-
-    sendBackAction = new QAction(QIcon(":/images/sendtoback.png"), tr("Send to &Back"), this);
-    sendBackAction->setShortcut(tr("Ctrl+B"));
-    sendBackAction->setStatusTip(tr("Send item to back"));
-    connect(sendBackAction, SIGNAL(triggered()), this, SLOT(sendToBack()));
-
     deleteAction = new QAction(QIcon(":/images/delete.png"), tr("&Delete"), this);
     deleteAction->setShortcut(tr("Delete"));
     deleteAction->setStatusTip(tr("Delete item from diagram"));
@@ -273,69 +325,16 @@ void MainWindow::createMenus()
 
     itemMenu = menuBar()->addMenu(tr("&Item"));
     itemMenu->addAction(deleteAction);
-    itemMenu->addSeparator();
-    itemMenu->addAction(toFrontAction);
-    itemMenu->addAction(sendBackAction);
 
     aboutMenu = menuBar()->addMenu(tr("&Help"));
     aboutMenu->addAction(aboutAction);
 
     siteMenu = menuBar()->addMenu(tr("&Site"));
     siteMenu->addAction(aboutAction);
-    siteMenu->addAction(sendBackAction);
 
     transMenu = menuBar()->addMenu(tr("&Transition"));
     transMenu->addAction(deleteAction);
-    transMenu->addAction(toFrontAction);
 
-}
-
-void MainWindow::createToolbars()
-{
-    editToolBar = addToolBar(tr("Edit"));
-    editToolBar->addAction(deleteAction);
-    editToolBar->addAction(toFrontAction);
-    editToolBar->addAction(sendBackAction);
-
-    fillColorToolButton = new QToolButton;
-    fillColorToolButton->setPopupMode(QToolButton::MenuButtonPopup);
-    fillColorToolButton->setMenu(createColorMenu(SLOT(itemColorChanged()), Qt::white));
-    fillAction = fillColorToolButton->menu()->defaultAction();
-    fillColorToolButton->setIcon(createColorToolButtonIcon(
-                                     ":/images/floodfill.png", Qt::white));
-    connect(fillColorToolButton, SIGNAL(clicked()),
-            this, SLOT(fillButtonTriggered()));
-
-    lineColorToolButton = new QToolButton;
-    lineColorToolButton->setPopupMode(QToolButton::MenuButtonPopup);
-    lineColorToolButton->setMenu(createColorMenu(SLOT(lineColorChanged()), Qt::black));
-    lineAction = lineColorToolButton->menu()->defaultAction();
-    lineColorToolButton->setIcon(createColorToolButtonIcon(
-                                     ":/images/linecolor.png", Qt::black));
-    connect(lineColorToolButton, SIGNAL(clicked()),
-            this, SLOT(lineButtonTriggered()));
-
-    colorToolBar = addToolBar(tr("Color"));
-    colorToolBar->addWidget(fillColorToolButton);
-    colorToolBar->addWidget(lineColorToolButton);
-
-    QToolButton *pointerButton = new QToolButton;
-    pointerButton->setCheckable(true);
-    pointerButton->setChecked(true);
-    pointerButton->setIcon(QIcon(":/images/pointer.png"));
-    QToolButton *linePointerButton = new QToolButton;
-    linePointerButton->setCheckable(true);
-    linePointerButton->setIcon(QIcon(":/images/linepointer.png"));
-
-    pointerTypeGroup = new QButtonGroup(this);
-    pointerTypeGroup->addButton(pointerButton, int(ConfigScene::MoveItem));
-    pointerTypeGroup->addButton(linePointerButton, int(ConfigScene::InsertLine));
-    connect(pointerTypeGroup, SIGNAL(buttonClicked(int)),
-            this, SLOT(pointerGroupClicked(int)));
-
-    pointerToolbar = addToolBar(tr("Pointer type"));
-    pointerToolbar->addWidget(pointerButton);
-    pointerToolbar->addWidget(linePointerButton);
 }
 
 QWidget *MainWindow::createBackgroundCellWidget(const QString &text, const QString &image)
@@ -361,11 +360,13 @@ QWidget *MainWindow::createCellWidget(const QString &text)
 {
 
     QToolButton *button = new QToolButton;
-    button->setIcon(QIcon(QPixmap(":/icons/cfilled.png")));
+    button->setIcon(QIcon(QPixmap(":/icons/uosite.png")));
     button->setIconSize(QSize(32, 32));
     button->setCheckable(true);
-    button->setToolTip("Occupied site");
+    button->setToolTip("Unoccupied site");
     buttonGroup->addButton(button);
+
+
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(button, 0, 0, Qt::AlignHCenter);
@@ -377,52 +378,6 @@ QWidget *MainWindow::createCellWidget(const QString &text)
     return widget;
 }
 
-QMenu *MainWindow::createColorMenu(const char *slot, QColor defaultColor)
-{
-    QList<QColor> colors;
-    colors << Qt::black << Qt::white << Qt::red << Qt::blue << Qt::yellow;
-    QStringList names;
-    names << tr("black") << tr("white") << tr("red") << tr("blue")
-          << tr("yellow");
-
-    QMenu *colorMenu = new QMenu(this);
-    for (int i = 0; i < colors.count(); ++i) {
-        QAction *action = new QAction(names.at(i), this);
-        action->setData(colors.at(i));
-        action->setIcon(createColorIcon(colors.at(i)));
-        connect(action, SIGNAL(triggered()), this, slot);
-        colorMenu->addAction(action);
-        if (colors.at(i) == defaultColor)
-            colorMenu->setDefaultAction(action);
-    }
-    return colorMenu;
-}
-
-QIcon MainWindow::createColorToolButtonIcon(const QString &imageFile, QColor color)
-{
-    QPixmap pixmap(50, 80);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    QPixmap image(imageFile);
-    // Draw icon centred horizontally on button.
-    QRect target(4, 0, 42, 43);
-    QRect source(0, 0, 42, 43);
-    painter.fillRect(QRect(0, 60, 50, 80), color);
-    painter.drawPixmap(target, image, source);
-
-    return QIcon(pixmap);
-}
-
-QIcon MainWindow::createColorIcon(QColor color)
-{
-    QPixmap pixmap(20, 20);
-    QPainter painter(&pixmap);
-    painter.setPen(Qt::NoPen);
-    painter.fillRect(QRect(0, 0, 20, 20), color);
-
-    return QIcon(pixmap);
-}
-
 void MainWindow::setupMatrix()
 {
     qreal scale = qPow(qreal(2), (zoomSlider->value() - 250) / qreal(50));
@@ -431,4 +386,119 @@ void MainWindow::setupMatrix()
     matrix.scale(scale, scale);
 
     view->setMatrix(matrix);
+}
+
+void MainWindow::drawCells()
+{
+    pcell1 = new QGraphicsRectItem;
+    pcell1->setRect(0,ycell, xcell, ycell);
+    pcell1->setBrush(QColor(218, 218, 218, 255));
+    pcell1->setPen(QPen(Qt::gray));
+    pcell1->setZValue(-2900);
+    scene->addItem(pcell1);
+
+    pcell2 = new QGraphicsRectItem;
+    pcell2->setRect(xcell,ycell, xcell, ycell);
+    pcell2->setBrush(QColor(218, 218, 218, 255));
+    pcell2->setPen(QPen(Qt::gray));
+    pcell2->setZValue(-2900);
+    scene->addItem(pcell2);
+
+    pcell3 = new QGraphicsRectItem;
+    pcell3->setRect(xcell,0, xcell, ycell);
+    pcell3->setBrush(QColor(218, 218, 218, 255));
+    pcell3->setPen(QPen(Qt::gray));
+    pcell3->setZValue(-2900);
+    scene->addItem(pcell3);
+
+    pcell4 = new QGraphicsRectItem;
+    pcell4->setRect(xcell,-ycell, xcell, ycell);
+    pcell4->setBrush(QColor(218, 218, 218, 255));
+    pcell4->setPen(QPen(Qt::gray));
+    pcell4->setZValue(-2900);
+    scene->addItem(pcell4);
+
+    pcell5 = new QGraphicsRectItem;
+    pcell5->setRect(0,-ycell, xcell, ycell);
+    pcell5->setBrush(QColor(218, 218, 218, 255));
+    pcell5->setPen(QPen(Qt::gray));
+    pcell5->setZValue(-2900);
+    scene->addItem(pcell5);
+
+    pcell6 = new QGraphicsRectItem;
+    pcell6->setRect(-xcell,-ycell, xcell, ycell);
+    pcell6->setBrush(QColor(218, 218, 218, 255));
+    pcell6->setPen(QPen(Qt::gray));
+    pcell6->setZValue(-2900);
+    scene->addItem(pcell6);
+
+    pcell7 = new QGraphicsRectItem;
+    pcell7->setRect(-xcell,0, xcell, ycell);
+    pcell7->setBrush(QColor(218, 218, 218, 255));
+    pcell7->setPen(QPen(Qt::gray));
+    pcell7->setZValue(-2900);
+    scene->addItem(pcell7);
+
+    pcell8 = new QGraphicsRectItem;
+    pcell8->setRect(-xcell,ycell, xcell, ycell);
+    pcell8->setBrush(QColor(218, 218, 218, 255));
+    pcell8->setPen(QPen(Qt::gray));
+    pcell8->setZValue(-2900);
+    scene->addItem(pcell8);
+
+    pcellc1 = new QGraphicsRectItem;
+    pcellc1->setRect(0,ycell, xcell, ycell+40);
+    pcellc1->setBrush(Qt::lightGray);
+    pcellc1->setPen(QPen(Qt::lightGray));
+    pcellc1->setZValue(0);
+    scene->addItem(pcellc1);
+
+    pcellc2 = new QGraphicsRectItem;
+    pcellc2->setRect(xcell,ycell, xcell+40, ycell+40);
+    pcellc2->setBrush(Qt::lightGray);
+    pcellc2->setPen(QPen(Qt::lightGray));
+    pcellc2->setZValue(0);
+    scene->addItem(pcellc2);
+
+    pcellc3 = new QGraphicsRectItem;
+    pcellc3->setRect(xcell,0, xcell+40, ycell);
+    pcellc3->setBrush(Qt::lightGray);
+    pcellc3->setPen(QPen(Qt::lightGray));
+    pcellc3->setZValue(0);
+    scene->addItem(pcellc3);
+
+    pcellc4 = new QGraphicsRectItem;
+    pcellc4->setRect(xcell,-ycell-40, xcell+40, ycell+40);
+    pcellc4->setBrush(Qt::lightGray);
+    pcellc4->setPen(QPen(Qt::lightGray));
+    pcellc4->setZValue(0);
+    scene->addItem(pcellc4);
+
+    pcellc5 = new QGraphicsRectItem;
+    pcellc5->setRect(0,-ycell-40, xcell, ycell+40);
+    pcellc5->setBrush(Qt::lightGray);
+    pcellc5->setPen(QPen(Qt::lightGray));
+    pcellc5->setZValue(0);
+    scene->addItem(pcellc5);
+
+    pcellc6 = new QGraphicsRectItem;
+    pcellc6->setRect(-xcell-40,-ycell-40, xcell+40, ycell+40);
+    pcellc6->setBrush(Qt::lightGray);
+    pcellc6->setPen(QPen(Qt::lightGray));
+    pcellc6->setZValue(0);
+    scene->addItem(pcellc6);
+
+    pcellc7 = new QGraphicsRectItem;
+    pcellc7->setRect(-xcell-40,0, xcell+40, ycell);
+    pcellc7->setBrush(Qt::lightGray);
+    pcellc7->setPen(QPen(Qt::lightGray));
+    pcellc7->setZValue(0);
+    scene->addItem(pcellc7);
+
+    pcellc8 = new QGraphicsRectItem;
+    pcellc8->setRect(-xcell-40,ycell, xcell+40, ycell+40);
+    pcellc8->setBrush(Qt::lightGray);
+    pcellc8->setPen(QPen(Qt::lightGray));
+    pcellc8->setZValue(0);
+    scene->addItem(pcellc8);
 }

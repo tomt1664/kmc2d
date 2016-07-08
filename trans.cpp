@@ -31,7 +31,7 @@ Transition::Transition(QMenu *contextMenu, Site *startItem, Site *endItem, QGrap
     QColor color(170,170,170,255);
     this->myColor = color;
 
-    setPen(QPen(Qt::gray, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    setPen(QPen(Qt::darkGray, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     setZValue(-50);
 }
 
@@ -54,6 +54,7 @@ QPainterPath Transition::shape() const
 void Transition::updatePosition()
 {
     QLineF line(mapFromItem(myStartItem, 0, 0), mapFromItem(myEndItem, 0, 0));
+
     setLine(line);
 }
 
@@ -64,15 +65,15 @@ void Transition::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
         return;
 
     QPen myPen = pen();
-    myPen.setColor(Qt::gray);
+    myPen.setColor(Qt::darkGray);
 
     painter->setPen(myPen);
     painter->setBrush(myColor);
 
     painter->drawLine(line());
     if (isSelected()) {
-        myPen.setColor(Qt::blue);
-        painter->setBrush(Qt::blue);
+        myPen.setColor(QColor(80, 80, 255, 255));
+        painter->setBrush(QColor(80, 80, 255, 255));
         painter->setPen(myPen);
         painter->drawLine(line());
     }

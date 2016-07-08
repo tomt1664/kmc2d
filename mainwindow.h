@@ -42,15 +42,10 @@ public:
 
 private slots:
     void backgroundButtonGroupClicked(QAbstractButton *button);
-    void buttonGroupClicked(int id);
     void deleteItem();
-    void pointerGroupClicked(int id);
-    void bringToFront();
-    void sendToBack();
-    void itemColorChanged();
-    void lineColorChanged();
-    void fillButtonTriggered();
-    void lineButtonTriggered();
+    void sceneGroupClicked(int id);
+    void toggleImages(bool on);
+    void toggleSnap(bool on);
     void setupMatrix();
     void about();
 
@@ -58,24 +53,20 @@ private:
     void createToolBox();
     void createActions();
     void createMenus();
-    void createToolbars();
+    void drawCells();
     QWidget *createBackgroundCellWidget(const QString &text,
                                         const QString &image);
     QWidget *createCellWidget(const QString &text);
-    QMenu *createColorMenu(const char *slot, QColor defaultColor);
-    QIcon createColorToolButtonIcon(const QString &image, QColor color);
-    QIcon createColorIcon(QColor color);
 
     ConfigScene *scene;
     QGraphicsView *view;
     QGraphicsRectItem *cell;
+    QGraphicsRectItem *perarea;
 
     QAction *exitAction;
     QAction *addAction;
     QAction *deleteAction;
 
-    QAction *toFrontAction;
-    QAction *sendBackAction;
     QAction *aboutAction;
 
     QMenu *fileMenu;
@@ -85,22 +76,40 @@ private:
     QMenu *siteMenu;
     QMenu *transMenu;
 
-    QToolBar *editToolBar;
-    QToolBar *colorToolBar;
-    QToolBar *pointerToolbar;
-
-    QComboBox *itemColorCombo;
-
     QToolBox *toolBox;
     QButtonGroup *buttonGroup;
     QButtonGroup *pointerTypeGroup;
     QButtonGroup *backgroundButtonGroup;
-    QToolButton *fillColorToolButton;
-    QToolButton *lineColorToolButton;
 
-    QAction *fillAction;
-    QAction *lineAction;
+    QButtonGroup *sceneGroup;
+    QToolButton *selectButton;
+    QToolButton *addUsiteButton;
+    QToolButton *addSiteButton;
+    QToolButton *addTransButton;
+    QToolButton *snapButton;
+    QToolButton *imageButton;
+
     QSlider *zoomSlider;
+
+    int xcell;
+    int ycell;
+    QGraphicsRectItem *pcell1;
+    QGraphicsRectItem *pcell2;
+    QGraphicsRectItem *pcell3;
+    QGraphicsRectItem *pcell4;
+    QGraphicsRectItem *pcell5;
+    QGraphicsRectItem *pcell6;
+    QGraphicsRectItem *pcell7;
+    QGraphicsRectItem *pcell8;
+
+    QGraphicsRectItem *pcellc1;
+    QGraphicsRectItem *pcellc2;
+    QGraphicsRectItem *pcellc3;
+    QGraphicsRectItem *pcellc4;
+    QGraphicsRectItem *pcellc5;
+    QGraphicsRectItem *pcellc6;
+    QGraphicsRectItem *pcellc7;
+    QGraphicsRectItem *pcellc8;
 };
 
 #endif // MAINWINDOW_H

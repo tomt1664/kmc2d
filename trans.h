@@ -41,6 +41,11 @@ public:
     Site *startItem() const { return myStartItem; }
     Site *endItem() const { return myEndItem; }
 
+    void setID(int id) { m_id = id; }
+    int id() { return m_id; }
+    double en() { return m_en; }
+    void setEn(double en) { m_en = en; }
+
     void updatePosition();
 
 protected:
@@ -48,6 +53,8 @@ protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) Q_DECL_OVERRIDE;
 
 private:
+    int m_id;
+    double m_en;
     Site *myStartItem;
     Site *myEndItem;
     QColor myColor;

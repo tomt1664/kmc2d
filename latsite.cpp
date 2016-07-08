@@ -18,20 +18,28 @@
 #include <QMenu>
 #include <QPainter>
 
-Site::Site(int stat, QMenu *contextMenu, QGraphicsItem *parent)
+Site::Site(int stat, int img, QMenu *contextMenu, QGraphicsItem *parent)
     : QGraphicsItem(parent)
 {
     myContextMenu = contextMenu;
 
+    //initialise the state and occupation
     state = stat;
+    m_img = img;
 
     QColor color(215,215,215,255);
     this->color = color;
 
-    setFlag(QGraphicsItem::ItemIsMovable, true);
-    setFlag(QGraphicsItem::ItemIsSelectable, true);
+    if(m_img == 0) // set selectable and moveable if in the main cell area
+    {
+        setFlag(QGraphicsItem::ItemIsMovable, true);
+        setFlag(QGraphicsItem::ItemIsSelectable, true);
+    }
+
     setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
+
+    setZValue(-10);
 }
 
 void Site::removeTransition(Transition *transition)
@@ -44,11 +52,14 @@ void Site::removeTransition(Transition *transition)
 
 void Site::removeTransitions()
 {
+    if(transitions.size() > 0)
+    {
     foreach (Transition *transition, transitions) {
         transition->startItem()->removeTransition(transition);
         transition->endItem()->removeTransition(transition);
         scene()->removeItem(transition);
         delete transition;
+    }
     }
 }
 
@@ -57,7 +68,7 @@ void Site::addTransition(Transition *transition)
     transitions.append(transition);
 }
 
-//define atom bounding rect
+//define the site bounding rect
 QRectF Site::boundingRect() const
 {
     return QRectF(-35, -35, 70, 70);
@@ -70,50 +81,40 @@ QPainterPath Site::shape() const
     return path;
 }
 
-//paint atom
+//paint the site
 void Site::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(widget);
 
-//    QColor fillColor = (option->state & QStyle::State_Selected) ? color.dark(150) : color;
-//    if (option->state & QStyle::State_MouseOver)
-//        fillColor = fillColor.light(125);
-
     QPen myPen;
-    myPen.setColor(Qt::gray);
+    myPen.setColor(Qt::darkGray);
 
-    painter->setPen(QPen(Qt::gray, 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setPen(QPen(Qt::darkGray, 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 
-//    QPen oldPen = painter->pen();
-//    QPen pen = oldPen;
-//    int width = 0;
-//    if (option->state & QStyle::State_Selected)
-//        width += 2;
 
-//    pen.setWidth(8);
     QBrush b = painter->brush();
-    painter->setBrush(QBrush(Qt::white));
+
+    // change shading based on state/occupation
+    if(m_img == 0) {
+        if(state == 0) {
+            painter->setBrush(QBrush(Qt::white));
+        } else if(state == 1) {
+            painter->setBrush(QBrush(Qt::darkGray));
+        }
+    }
+    else {
+        if(state == 0) {
+            painter->setBrush(QBrush(QColor(218, 218, 218, 255)));
+        } else if(state == 1) {
+            painter->setBrush(QBrush(Qt::gray));
+        }
+    }
 
     painter->drawEllipse(-25, -25, 50, 50);
     painter->setBrush(b);
 
-
-
-
-
-
-//    QPen myPen = pen();
-//    myPen.setColor(Qt::gray);
-
-//    painter->setPen(myPen);
-//    painter->setBrush(myColor);
-
-
-//    painter->drawLine(line());
     if (isSelected()) {
-//        myPen.setColor(Qt::blue);
-//        painter->setBrush(Qt::blue);
-        painter->setPen(QPen(Qt::blue, 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter->setPen(QPen(QColor(80, 80, 255, 255), 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         painter->drawEllipse(-25, -25, 50, 50);
     }
 
@@ -130,15 +131,42 @@ QVariant Site::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == QGraphicsItem::ItemPositionChange) {
         foreach (Transition *transition, transitions) {
-            transition->updatePosition();
+               transition->updatePosition();
         }
-        QPointF newPos = value.toPointF();
-        QRectF rect = scene()->sceneRect();
-        if (!rect.contains(newPos)) {
-               // Keep the item inside the scene rect.
-               newPos.setX(qMin(rect.right(), qMax(newPos.x(), rect.left())));
-               newPos.setY(qMin(rect.bottom(), qMax(newPos.y(), rect.top())));
-               return newPos;
+        foreach (QGraphicsItem *item, childItems()) {
+            foreach(Transition *transition, qgraphicsitem_cast<Site *>(item)->transitions) {
+                transition->updatePosition();
+            }
+        }
+
+        if(m_img == 0)
+        {
+            QPointF newPos = value.toPointF();
+            QRectF rect = scene()->sceneRect();
+
+            // do snap to grid
+            ConfigScene* customScene = qobject_cast<ConfigScene*> (scene());
+            bool doSnap = customScene->getSnap();
+
+            if(doSnap) {
+                int gridSize = customScene->getGridSize();
+
+                qreal xV = round(newPos.x()/gridSize)*gridSize;
+                qreal yV = round(newPos.y()/gridSize)*gridSize;
+
+                newPos.setX(xV);
+                newPos.setY(yV);
+            }
+            if (!rect.contains(newPos)) {
+            // Keep the item inside the scene rect.
+                newPos.setX(qMin(rect.right(), qMax(newPos.x(), rect.left())));
+                newPos.setY(qMin(rect.bottom(), qMax(newPos.y(), rect.top())));
+                return newPos;
+            }
+
+            if(doSnap) {
+                return newPos;
+            }
         }
     }
 
