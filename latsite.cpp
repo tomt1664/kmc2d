@@ -99,7 +99,7 @@ void Site::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
         if(state == 0) {
             painter->setBrush(QBrush(Qt::white));
         } else if(state == 1) {
-            painter->setBrush(QBrush(Qt::darkGray));
+            painter->setBrush(QBrush(Qt::gray));
         }
     }
     else {
@@ -125,6 +125,15 @@ void Site::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
     scene()->clearSelection();
     setSelected(true);
     myContextMenu->exec(event->screenPos());
+}
+
+void Site::updateTrans()
+{
+    foreach (QGraphicsItem *item, childItems()) {
+        foreach(Transition *transition, qgraphicsitem_cast<Site *>(item)->transitions) {
+            transition->updatePosition();
+        }
+    }
 }
 
 QVariant Site::itemChange(GraphicsItemChange change, const QVariant &value)

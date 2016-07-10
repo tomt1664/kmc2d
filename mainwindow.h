@@ -46,6 +46,7 @@ private slots:
     void sceneGroupClicked(int id);
     void toggleImages(bool on);
     void toggleSnap(bool on);
+    void changeCellSize();
     void setupMatrix();
     void about();
 
@@ -54,6 +55,7 @@ private:
     void createActions();
     void createMenus();
     void drawCells();
+    void redrawCells();
     QWidget *createBackgroundCellWidget(const QString &text,
                                         const QString &image);
     QWidget *createCellWidget(const QString &text);
@@ -88,6 +90,7 @@ private:
     QToolButton *addTransButton;
     QToolButton *snapButton;
     QToolButton *imageButton;
+    QToolButton *cellSizeButton;
 
     QSlider *zoomSlider;
 

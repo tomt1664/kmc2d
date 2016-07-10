@@ -40,6 +40,7 @@ public:
     void removeTransition(Transition *transition);
     void removeTransitions();
     void addTransition(Transition *transition);
+    void updateTrans();
     int type() const Q_DECL_OVERRIDE { return Type;}
 
     void setEn(float en) { energy = en; }

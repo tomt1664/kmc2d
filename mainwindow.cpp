@@ -11,6 +11,7 @@
 #include "latsite.h"
 #include "configscene.h"
 #include "mainwindow.h"
+#include "cellsizedialog.h"
 
 #include <QtWidgets>
 #include <QDebug>
@@ -180,6 +181,63 @@ void MainWindow::toggleSnap(bool on)
     }
 }
 
+//change the simulation cell size: launch dialog box
+void MainWindow::changeCellSize()
+{
+    int xcellOld = xcell;
+    int ycellOld = ycell;
+    CellSizeDialog cellsizedialog(xcell,ycell);
+    cellsizedialog.exec();
+
+    //get the new dimensions
+    xcell = cellsizedialog.getx();
+    ycell = cellsizedialog.gety();
+
+    //re-draw the system
+    scene->setSceneRect(QRectF(0, 0, xcell, ycell));
+    cell->setRect(0, 0, xcell, ycell);
+    perarea->setRect(-xcell-10, -ycell-10, 3*xcell+20, 3*ycell+20);
+    redrawCells();
+
+    //move the image items
+    foreach (QGraphicsItem *item, scene->items() ) {
+         if (item->type() == Site::Type)
+         {
+             foreach (QGraphicsItem *child, item->childItems() )
+             {
+                 qreal ximg = child->scenePos().x();
+                 qreal yimg = child->scenePos().y();
+                 qreal ximgp = child->x();
+                 qreal yimgp = child->y();
+                 qDebug() << ximg << " " << yimg << " " << xcell << " " << ycell << " " << xcellOld << " " << ycellOld;
+                 if(ximg > 0 && ximg < xcellOld && yimg < 0) {
+                     child->setY(yimgp - (ycell - ycellOld));
+                 } else if(ximg > xcellOld && yimg < 0) {
+                     child->setY(yimgp - (ycell - ycellOld));
+                     child->setX(ximgp + (xcell - xcellOld));
+                 } else if(ximg > xcellOld && yimg > 0 && yimg < ycellOld) {
+                     child->setX(ximgp + (xcell - xcellOld));
+                 } else if(ximg > xcellOld && yimg > ycellOld) {
+                     child->setY(yimgp + (ycell - ycellOld));
+                     child->setX(ximgp + (xcell - xcellOld));
+                 } else if(ximg > 0 && ximg < xcellOld && yimg > ycellOld) {
+                     child->setY(yimgp + (ycell - ycellOld));
+                 } else if(ximg < 0 && yimg > ycellOld) {
+                     child->setY(yimgp + (ycell - ycellOld));
+                     child->setX(ximgp - (xcell - xcellOld));
+                 } else if(ximg < 0 && yimg > 0 && yimg < ycellOld) {
+                     child->setX(ximgp - (xcell - xcellOld));
+                 } else if(ximg < 0 && yimg < 0) {
+                     child->setY(yimgp - (ycell - ycellOld));
+                     child->setX(ximgp - (xcell - xcellOld));
+                 }
+             }
+             qgraphicsitem_cast<Site *>(item)->updateTrans();
+         }
+    }
+
+}
+
 void MainWindow::about()
 {    
     QMessageBox::about(this, tr("About "),
@@ -228,13 +286,6 @@ void MainWindow::createToolBox()
     selectButton->setChecked(false);
     selectButton->setToolTip("Select item");
 
-    snapButton = new QToolButton;
-    snapButton->setIcon(QIcon(QPixmap(":/icons/snap.png")));
-    snapButton->setIconSize(QSize(32, 32));
-    snapButton->setCheckable(true);
-    snapButton->setChecked(false);
-    snapButton->setToolTip("Snap to grid");
-
     sceneGroup = new QButtonGroup;
     sceneGroup->setExclusive(true);
     sceneGroup->addButton(addUsiteButton, int(ConfigScene::InsertUSite));
@@ -255,19 +306,36 @@ void MainWindow::createToolBox()
     imageButton->setIconSize(QSize(32, 32));
     imageButton->setCheckable(true);
     imageButton->setChecked(false);
+    imageButton->setToolTip("Display periodic images");
+
+    snapButton = new QToolButton;
+    snapButton->setIcon(QIcon(QPixmap(":/icons/snap.png")));
+    snapButton->setIconSize(QSize(32, 32));
+    snapButton->setCheckable(true);
+    snapButton->setChecked(false);
+    snapButton->setToolTip("Snap to grid");
+
+    cellSizeButton = new QToolButton;
+    cellSizeButton->setIcon(QIcon(QPixmap(":/icons/csize.png")));
+    cellSizeButton->setIconSize(QSize(32, 32));
+    cellSizeButton->setToolTip("Set cell dimensions");
 
     sceneButtonLayout->addWidget(imageButton, 1, 0);
     sceneButtonLayout->addWidget(snapButton, 1, 1);
+    sceneButtonLayout->addWidget(cellSizeButton, 1, 2);
 
     connect(imageButton, SIGNAL(toggled(bool)),
             this, SLOT(toggleImages(bool)));
     connect(snapButton, SIGNAL(toggled(bool)),this,SLOT(toggleSnap(bool)));
+    connect(cellSizeButton, SIGNAL(clicked()),this,SLOT(changeCellSize()));
 
 //    QGridLayout *layout = new QGridLayout;
 //    layout->addWidget(createCellWidget(tr("Site")), 0, 0);
 
 //    layout->setRowStretch(3, 10);
 //    layout->setColumnStretch(2, 10);
+
+
 
     QWidget *itemWidget = new QWidget;
     itemWidget->setLayout(sceneButtonLayout);
@@ -501,4 +569,24 @@ void MainWindow::drawCells()
     pcellc8->setPen(QPen(Qt::lightGray));
     pcellc8->setZValue(0);
     scene->addItem(pcellc8);
+}
+
+void MainWindow::redrawCells()
+{
+    pcell1->setRect(0,ycell, xcell, ycell);
+    pcell2->setRect(xcell,ycell, xcell, ycell);
+    pcell3->setRect(xcell,0, xcell, ycell);
+    pcell4->setRect(xcell,-ycell, xcell, ycell);
+    pcell5->setRect(0,-ycell, xcell, ycell);
+    pcell6->setRect(-xcell,-ycell, xcell, ycell);
+    pcell7->setRect(-xcell,0, xcell, ycell);
+    pcell8->setRect(-xcell,ycell, xcell, ycell);
+    pcellc1->setRect(0,ycell, xcell, ycell+40);
+    pcellc2->setRect(xcell,ycell, xcell+40, ycell+40);
+    pcellc3->setRect(xcell,0, xcell+40, ycell);
+    pcellc4->setRect(xcell,-ycell-40, xcell+40, ycell+40);
+    pcellc5->setRect(0,-ycell-40, xcell, ycell+40);
+    pcellc6->setRect(-xcell-40,-ycell-40, xcell+40, ycell+40);
+    pcellc7->setRect(-xcell-40,0, xcell+40, ycell);
+    pcellc8->setRect(-xcell-40,ycell, xcell+40, ycell+40);
 }
