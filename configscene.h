@@ -32,14 +32,12 @@ public:
     enum Mode { InsertUSite, InsertSite, InsertTrans, MoveItem };
 
     explicit ConfigScene(QMenu *siteMenu, QMenu *transMenu,int xc, int yc, QObject *parent = 0);
-    QColor itemColor() const { return myItemColor; }
-    QColor lineColor() const { return myLineColor; }
-    void setLineColor(const QColor &color);
-    void setItemColor(const QColor &color);
+    void addSite(bool ostate, double xc, double yc);
 
     int getGridSize() const { return this->gridSize; }
     bool getSnap() { return this->snap; }
     void setSnap(bool dosnap) { snap = dosnap; }
+    void changeCell(int xcelln, int ycelln) { xcell = xcelln; ycell = ycelln; }
 
 public slots:
     void setMode(Mode mode);

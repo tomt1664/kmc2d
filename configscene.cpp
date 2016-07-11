@@ -31,23 +31,67 @@ ConfigScene::ConfigScene(QMenu *siteMenu, QMenu *transMenu, int xc, int yc, QObj
     snap = false;
 }
 
-void ConfigScene::setLineColor(const QColor &color)
+void ConfigScene::addSite(bool ostate, double xc, double yc)
 {
-    myLineColor = color;
-    if (isItemChange(Transition::Type)) {
-        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
-        item->setColor(myLineColor);
-        update();
-    }
-}
+    Site *item;
+    //periodic images
+    Site *image1, *image2, *image3, *image4;
+    Site *image5, *image6, *image7, *image8;
 
-void ConfigScene::setItemColor(const QColor &color)
-{
-    myItemColor = color;
-    if (isItemChange(Site::Type)) {
-        Site *item = qgraphicsitem_cast<Site *>(selectedItems().first());
-//        item->setBrush(myItemColor);
+    //insert objects into scene
+    item = new Site(0,0,mySiteMenu);
+    if(ostate){
+        item->on();
+    } else {
+        item->off();
     }
+    QPointF xper1(0,ycell), xper2(xcell,ycell), xper3(xcell,0), xper4(xcell,-ycell);
+    QPointF xper5(0,-ycell), xper6(-xcell,-ycell), xper7(-xcell,0), xper8(-xcell,ycell);
+    image1 = new Site(0,1,mySiteMenu);
+    image2 = new Site(0,2,mySiteMenu);
+    image3 = new Site(0,3,mySiteMenu);
+    image4 = new Site(0,4,mySiteMenu);
+    image5 = new Site(0,5,mySiteMenu);
+    image6 = new Site(0,6,mySiteMenu);
+    image7 = new Site(0,7,mySiteMenu);
+    image8 = new Site(0,8,mySiteMenu);
+    if(ostate){
+        image1->on();
+        image2->on();
+        image3->on();
+        image4->on();
+        image5->on();
+        image6->on();
+        image7->on();
+        image8->on();
+    } else {
+        image1->off();
+        image2->off();
+        image3->off();
+        image4->off();
+        image5->off();
+        image6->off();
+        image7->off();
+        image8->off();
+    }
+    image1->setParentItem(item);
+    image2->setParentItem(item);
+    image3->setParentItem(item);
+    image4->setParentItem(item);
+    image5->setParentItem(item);
+    image6->setParentItem(item);
+    image7->setParentItem(item);
+    image8->setParentItem(item);
+    addItem(item);
+    item->setPos(xc,yc);
+    image1->setPos(xper1);
+    image2->setPos(xper2);
+    image3->setPos(xper3);
+    image4->setPos(xper4);
+    image5->setPos(xper5);
+    image6->setPos(xper6);
+    image7->setPos(xper7);
+    image8->setPos(xper8);
 }
 
 void ConfigScene::setMode(Mode mode)

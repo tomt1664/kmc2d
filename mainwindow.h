@@ -47,6 +47,7 @@ private slots:
     void toggleImages(bool on);
     void toggleSnap(bool on);
     void changeCellSize();
+    void expandSystem();
     void setupMatrix();
     void about();
 
@@ -91,6 +92,7 @@ private:
     QToolButton *snapButton;
     QToolButton *imageButton;
     QToolButton *cellSizeButton;
+    QToolButton *expandButton;
 
     QSlider *zoomSlider;
 

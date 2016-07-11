@@ -7,19 +7,19 @@
 ** tptrevethan@googlemail.com
 ****************************************************************************/
 
-#ifndef CELLSIZEDIALOG
-#define CELLSIZEDIALOG
+#ifndef EXPANDDIALOG
+#define EXPANDDIALOG
 
 #include <QDialog>
 #include <QtWidgets>
 #include <QLineEdit>
 
-class CellSizeDialog : public QDialog   //simulation cell size change dialog box
+class ExpandDialog : public QDialog   //expand the simulation cell dialog box
 {
     Q_OBJECT
 
 public:
-    CellSizeDialog(int xcell, int ycell);
+    ExpandDialog(void);
     int getx() { return m_x; }
     int gety() { return m_y; }
     int cancel() { return cncl; }
@@ -38,4 +38,5 @@ private:
     int cncl;
 };
 
-#endif // CELLSIZEDIALOG
+#endif // EXPANDDIALOG
+

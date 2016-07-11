@@ -12,6 +12,7 @@
 #include "configscene.h"
 #include "mainwindow.h"
 #include "cellsizedialog.h"
+#include "expanddialog.h"
 
 #include <QtWidgets>
 #include <QDebug>
@@ -188,12 +189,13 @@ void MainWindow::changeCellSize()
     int ycellOld = ycell;
     CellSizeDialog cellsizedialog(xcell,ycell);
     cellsizedialog.exec();
-
+    if(cellsizedialog.cancel()) return;
     //get the new dimensions
     xcell = cellsizedialog.getx();
     ycell = cellsizedialog.gety();
 
     //re-draw the system
+    scene->changeCell(xcell,ycell);
     scene->setSceneRect(QRectF(0, 0, xcell, ycell));
     cell->setRect(0, 0, xcell, ycell);
     perarea->setRect(-xcell-10, -ycell-10, 3*xcell+20, 3*ycell+20);
@@ -235,7 +237,86 @@ void MainWindow::changeCellSize()
              qgraphicsitem_cast<Site *>(item)->updateTrans();
          }
     }
+}
 
+void MainWindow::expandSystem()
+{
+    int xcellOld = xcell;
+    int ycellOld = ycell;
+    ExpandDialog expanddialog;
+    expanddialog.exec();
+    if(expanddialog.cancel()) return;
+    //get the expansion multiples
+    int xexp = expanddialog.getx();
+    int yexp = expanddialog.gety();
+
+    xcell = xcell*xexp;
+    ycell = ycell*yexp;
+
+    //re-draw the system
+    scene->changeCell(xcell,ycell);
+    scene->setSceneRect(QRectF(0, 0, xcell, ycell));
+    cell->setRect(0, 0, xcell, ycell);
+    perarea->setRect(-xcell-10, -ycell-10, 3*xcell+20, 3*ycell+20);
+    redrawCells();
+
+    //move the image items
+    foreach (QGraphicsItem *item, scene->items() ) {
+         if (item->type() == Site::Type)
+         {
+             foreach (QGraphicsItem *child, item->childItems() )
+             {
+                 qreal ximg = child->scenePos().x();
+                 qreal yimg = child->scenePos().y();
+                 qreal ximgp = child->x();
+                 qreal yimgp = child->y();
+                 qDebug() << ximg << " " << yimg << " " << xcell << " " << ycell << " " << xcellOld << " " << ycellOld;
+                 if(ximg > 0 && ximg < xcellOld && yimg < 0) {
+                     child->setY(yimgp - (ycell - ycellOld));
+                 } else if(ximg > xcellOld && yimg < 0) {
+                     child->setY(yimgp - (ycell - ycellOld));
+                     child->setX(ximgp + (xcell - xcellOld));
+                 } else if(ximg > xcellOld && yimg > 0 && yimg < ycellOld) {
+                     child->setX(ximgp + (xcell - xcellOld));
+                 } else if(ximg > xcellOld && yimg > ycellOld) {
+                     child->setY(yimgp + (ycell - ycellOld));
+                     child->setX(ximgp + (xcell - xcellOld));
+                 } else if(ximg > 0 && ximg < xcellOld && yimg > ycellOld) {
+                     child->setY(yimgp + (ycell - ycellOld));
+                 } else if(ximg < 0 && yimg > ycellOld) {
+                     child->setY(yimgp + (ycell - ycellOld));
+                     child->setX(ximgp - (xcell - xcellOld));
+                 } else if(ximg < 0 && yimg > 0 && yimg < ycellOld) {
+                     child->setX(ximgp - (xcell - xcellOld));
+                 } else if(ximg < 0 && yimg < 0) {
+                     child->setY(yimgp - (ycell - ycellOld));
+                     child->setX(ximgp - (xcell - xcellOld));
+                 }
+             }
+             qgraphicsitem_cast<Site *>(item)->updateTrans();
+         }
+    }
+    //replicate the sites
+    foreach (QGraphicsItem *item, scene->items() ) {
+         if (item->type() == Site::Type)
+         {
+             if(item->childItems().size() > 0)
+             {
+                 for(int i=0; i < xexp; i++)
+                 {
+                     for(int j=0; j< yexp; j++)
+                     {
+                         if((i+j) > 0) {
+
+                             double xadd = item->x() + i*xcellOld;
+                             double yadd = item->y() + j*ycellOld;
+                             scene->addSite(qgraphicsitem_cast<Site *>(item)->stat(),xadd,yadd);
+                         }
+                     }
+                 }
+             }
+         }
+    }
 }
 
 void MainWindow::about()
@@ -320,14 +401,21 @@ void MainWindow::createToolBox()
     cellSizeButton->setIconSize(QSize(32, 32));
     cellSizeButton->setToolTip("Set cell dimensions");
 
+    expandButton = new QToolButton;
+    expandButton->setIcon(QIcon(QPixmap(":/icons/expand.png")));
+    expandButton->setIconSize(QSize(32, 32));
+    expandButton->setToolTip("Expand system");
+
     sceneButtonLayout->addWidget(imageButton, 1, 0);
     sceneButtonLayout->addWidget(snapButton, 1, 1);
     sceneButtonLayout->addWidget(cellSizeButton, 1, 2);
+    sceneButtonLayout->addWidget(expandButton, 1, 3);
 
     connect(imageButton, SIGNAL(toggled(bool)),
             this, SLOT(toggleImages(bool)));
     connect(snapButton, SIGNAL(toggled(bool)),this,SLOT(toggleSnap(bool)));
     connect(cellSizeButton, SIGNAL(clicked()),this,SLOT(changeCellSize()));
+    connect(expandButton, SIGNAL(clicked()),this,SLOT(expandSystem()));
 
 //    QGridLayout *layout = new QGridLayout;
 //    layout->addWidget(createCellWidget(tr("Site")), 0, 0);

@@ -11,22 +11,19 @@
 
 #include <QDebug>
 
-#include "cellsizedialog.h"
+#include "expanddialog.h"
 
-CellSizeDialog::CellSizeDialog(int xcell, int ycell)
+ExpandDialog::ExpandDialog(void)
 {
-    int xred = xcell/10;
-    int yred = ycell/10;
-
-    QLabel *xLabel = new QLabel(tr("x Dimension:"));
+    QLabel *xLabel = new QLabel(tr("Multiply x:"));
     xEdit = new QLineEdit;
-    xEdit->setText(QString::number(xred));
-    xEdit->setValidator(new QIntValidator(10,1000, xEdit));
+    xEdit->setText(QString::number(1));
+    xEdit->setValidator(new QIntValidator(1,100, xEdit));
 
-    QLabel *yLabel = new QLabel(tr("y Dimension:"));
+    QLabel *yLabel = new QLabel(tr("Multiply y:"));
     yEdit = new QLineEdit;
-    yEdit->setText(QString::number(yred));
-    yEdit->setValidator(new QIntValidator(10,1000, yEdit));
+    yEdit->setText(QString::number(1));
+    yEdit->setValidator(new QIntValidator(1,100, yEdit));
 
     okButton = new QPushButton(tr("OK"));
     cancelButton = new QPushButton(tr("Cancel"));
@@ -43,20 +40,21 @@ CellSizeDialog::CellSizeDialog(int xcell, int ycell)
     connect(okButton, SIGNAL(clicked()), this, SLOT(okButtonPress()));
     connect(cancelButton, SIGNAL(clicked()), this, SLOT(cancelButtonPress()));
 
-    setWindowTitle(tr("Cell Dimensions"));
+    setWindowTitle(tr("Expand system cell"));
 }
 
-void CellSizeDialog::okButtonPress()
+void ExpandDialog::okButtonPress()
 {
-    m_x = xEdit->text().toInt()*10;
-    m_y = yEdit->text().toInt()*10;
+    m_x = xEdit->text().toInt();
+    m_y = yEdit->text().toInt();
     cncl = 0;
     close();
 }
 
-void CellSizeDialog::cancelButtonPress()
+void ExpandDialog::cancelButtonPress()
 {
     cncl = 1;
     close();
 }
+
 

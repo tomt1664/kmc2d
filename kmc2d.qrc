@@ -9,5 +9,6 @@
         <file>icons/point.png</file>
         <file>icons/image.png</file>
         <file>icons/csize.png</file>
+        <file>icons/expand.png</file>
     </qresource>
 </RCC>
