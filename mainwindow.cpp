@@ -50,6 +50,7 @@ MainWindow::MainWindow()
     //draw the periodic cells
     drawCells();
 
+    //add slider to the right of qgraphicsview for zooming
     zoomSlider = new QSlider;
     zoomSlider->setMinimum(0);
     zoomSlider->setMaximum(500);
@@ -70,8 +71,6 @@ MainWindow::MainWindow()
 
     setCentralWidget(widget);
     setWindowTitle(tr("KMC2D"));
-    setUnifiedTitleAndToolBarOnMac(true);
-
 }
 
 void MainWindow::backgroundButtonGroupClicked(QAbstractButton *button)
@@ -95,7 +94,7 @@ void MainWindow::backgroundButtonGroupClicked(QAbstractButton *button)
     view->update();
 }
 
-
+//delete item
 void MainWindow::deleteItem()
 {
     int irem = 0;
@@ -110,6 +109,7 @@ void MainWindow::deleteItem()
         }
     }
 
+    //if transition has a periodic mirror (id > 0) then delete that too
     if(irem > 0)
     {
         foreach (QGraphicsItem *item, scene->items() ) {
@@ -126,6 +126,7 @@ void MainWindow::deleteItem()
         }
     }
 
+    //if delete site, delete all child items as well (periodic images)
     foreach (QGraphicsItem *item, scene->selectedItems()) {
          if (item->type() == Site::Type)
          {
@@ -146,6 +147,7 @@ void MainWindow::sceneGroupClicked(int)
     scene->setMode(ConfigScene::Mode(sceneGroup->checkedId()));
 }
 
+//toggle the mask to hide the periodic images
 void MainWindow::toggleImages(bool on)
 {
     if(on)
@@ -171,6 +173,7 @@ void MainWindow::toggleImages(bool on)
     }
 }
 
+//toggle the snap-to-grid function
 void MainWindow::toggleSnap(bool on)
 {
     if(on)
@@ -211,7 +214,6 @@ void MainWindow::changeCellSize()
                  qreal yimg = child->scenePos().y();
                  qreal ximgp = child->x();
                  qreal yimgp = child->y();
-                 qDebug() << ximg << " " << yimg << " " << xcell << " " << ycell << " " << xcellOld << " " << ycellOld;
                  if(ximg > 0 && ximg < xcellOld && yimg < 0) {
                      child->setY(yimgp - (ycell - ycellOld));
                  } else if(ximg > xcellOld && yimg < 0) {
@@ -239,6 +241,11 @@ void MainWindow::changeCellSize()
     }
 }
 
+//function to multiply out the system
+//this performs three main functions:
+// 1. Increase the cell size
+// 2. Replicate the sites within the initial cell in x and y directions
+// 3. Create and replace transitions based on the initial and final periodicity
 void MainWindow::expandSystem()
 {
     int xcellOld = xcell;
@@ -270,7 +277,6 @@ void MainWindow::expandSystem()
                  qreal yimg = child->scenePos().y();
                  qreal ximgp = child->x();
                  qreal yimgp = child->y();
-                 qDebug() << ximg << " " << yimg << " " << xcell << " " << ycell << " " << xcellOld << " " << ycellOld;
                  if(ximg > 0 && ximg < xcellOld && yimg < 0) {
                      child->setY(yimgp - (ycell - ycellOld));
                  } else if(ximg > xcellOld && yimg < 0) {
@@ -296,31 +302,281 @@ void MainWindow::expandSystem()
              qgraphicsitem_cast<Site *>(item)->updateTrans();
          }
     }
+
+    //put transition start and end items into a temporary vector
+    QList<Site*> startSites;
+    QList<Site*> endSites;
+    QList<Transition*> stransition;
+    QList<Transition*> btransition;
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Transition::Type) {
+            Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+            if(itransition->id() == 0)
+            {
+                stransition.append(itransition);
+                startSites.append(itransition->startItem());
+                endSites.append(itransition->endItem());
+            } else {
+                btransition.append(itransition);
+            }
+        }
+    }
+
+    int indx = 0;
     //replicate the sites
     foreach (QGraphicsItem *item, scene->items() ) {
          if (item->type() == Site::Type)
          {
              if(item->childItems().size() > 0)
              {
+                 indx++;
+                 qgraphicsitem_cast<Site *>(item)->setID(indx);
+                 qgraphicsitem_cast<Site *>(item)->setRep(0,0);
+                 foreach(QGraphicsItem *citem, item->childItems())
+                 {
+                     qgraphicsitem_cast<Site *>(citem)->setID(indx);
+                     qgraphicsitem_cast<Site *>(citem)->setRep(0,0);
+                 }
+
                  for(int i=0; i < xexp; i++)
                  {
-                     for(int j=0; j< yexp; j++)
+                     for(int j=0; j < yexp; j++)
                      {
                          if((i+j) > 0) {
-
                              double xadd = item->x() + i*xcellOld;
                              double yadd = item->y() + j*ycellOld;
-                             scene->addSite(qgraphicsitem_cast<Site *>(item)->stat(),xadd,yadd);
+                             scene->addSite(qgraphicsitem_cast<Site *>(item)->stat(),xadd,yadd,indx,i,j);
                          }
                      }
                  }
              }
          }
     }
+
+    int istart;
+    int iend;
+    //replicate transitions
+    for(int i=0; i < xexp; i++)
+    {
+        for(int j=0; j < yexp; j++)
+        {
+            if((i+j) > 0) {
+                foreach(Transition *itransition, stransition) {
+                    if(itransition->id() == 0)
+                        {
+                            istart = itransition->startItem()->id();
+                            iend = itransition->endItem()->id();
+                            Site *myStartItem;
+                            Site *myEndItem;
+                            foreach (QGraphicsItem *sitem, scene->items()) {
+                                if (sitem->type() == Site::Type) {
+                                    if(qgraphicsitem_cast<Site *>(sitem)->xr() == i && qgraphicsitem_cast<Site *>(sitem)->yr() == j)
+                                    {
+                                        if(qgraphicsitem_cast<Site *>(sitem)->id() == istart)
+                                        {
+                                            myStartItem = qgraphicsitem_cast<Site *>(sitem);
+                                        }
+                                        if(qgraphicsitem_cast<Site *>(sitem)->id() == iend)
+                                        {
+                                            myEndItem = qgraphicsitem_cast<Site *>(sitem);
+                                        }
+                                    }
+                                }
+                            }
+                            scene->addTrans(myStartItem,myEndItem);
+                        }
+                    }
+                }
+            }
+        }
+
+//  rearrange boundary transitions
+//  and add inter-replica transitions
+
+    int imgStart;
+    int imgEnd;
+    int sindx = 0;
+    int eindx = 0;
+    foreach(Transition *itransition, btransition) {
+        imgStart = itransition->startItem()->img();
+        imgEnd = itransition->endItem()->img();
+        Site *myStartItem1;
+        Site *myEndItem1;
+        Site *myStartItem2;
+        Site *myEndItem2;
+
+        //do the x-direction replication
+        if(imgEnd == 7) {
+            sindx = itransition->startItem()->id();
+            eindx = itransition->endItem()->id();
+            //loop over y-replicas
+            for(int iy = 0; iy < yexp; iy++) {
+                //add new 0,0 boundary transition
+                foreach (QGraphicsItem *sitem, scene->items()) {
+                    if (sitem->type() == Site::Type) {
+                        if(qgraphicsitem_cast<Site *>(sitem)->xr() == (xexp-1) && qgraphicsitem_cast<Site *>(sitem)->yr() == iy)
+                            {
+                                if(qgraphicsitem_cast<Site *>(sitem)->id() == eindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                                {
+                                    myStartItem1 = qgraphicsitem_cast<Site *>(sitem);
+                                }
+                            }
+                        if(qgraphicsitem_cast<Site *>(sitem)->xr() == 0 && qgraphicsitem_cast<Site *>(sitem)->yr() == iy)
+                        {
+                            if(qgraphicsitem_cast<Site *>(sitem)->id() == sindx && qgraphicsitem_cast<Site *>(sitem)->img() == 3)
+                            {
+                                myEndItem1 = qgraphicsitem_cast<Site *>(sitem);
+                            }
+                         }
+                    }
+                }
+                //add new xexp,0 boundary transition
+                foreach (QGraphicsItem *sitem, scene->items()) {
+                    if (sitem->type() == Site::Type) {
+                        if(qgraphicsitem_cast<Site *>(sitem)->xr() == 0 && qgraphicsitem_cast<Site *>(sitem)->yr() == iy)
+                        {
+                            if(qgraphicsitem_cast<Site *>(sitem)->id() == sindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                            {
+                                myStartItem2 = qgraphicsitem_cast<Site *>(sitem);
+                            }
+                        }
+                        if(qgraphicsitem_cast<Site *>(sitem)->xr() == (xexp-1) && qgraphicsitem_cast<Site *>(sitem)->yr() == iy)
+                        {
+                            if(qgraphicsitem_cast<Site *>(sitem)->id() == eindx && qgraphicsitem_cast<Site *>(sitem)->img() == 7)
+                             {
+                                 myEndItem2 = qgraphicsitem_cast<Site *>(sitem);
+                             }
+                        }
+                    }
+                }
+                scene->addTransPair(myStartItem1,myEndItem1,myStartItem2,myEndItem2);
+
+                //add inter-replica transitions
+                for(int ix = 0; ix < (xexp-1); ix++) {
+                    foreach (QGraphicsItem *sitem, scene->items()) {
+                        if (sitem->type() == Site::Type) {
+                            if(qgraphicsitem_cast<Site *>(sitem)->xr() == ix && qgraphicsitem_cast<Site *>(sitem)->yr() == iy)
+                            {
+                                if(qgraphicsitem_cast<Site *>(sitem)->id() == eindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                                {
+                                    myStartItem1 = qgraphicsitem_cast<Site *>(sitem);
+                                }
+                            }
+                            if(qgraphicsitem_cast<Site *>(sitem)->xr() == (ix+1) && qgraphicsitem_cast<Site *>(sitem)->yr() == iy)
+                            {
+                                if(qgraphicsitem_cast<Site *>(sitem)->id() == sindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                                {
+                                    myEndItem1 = qgraphicsitem_cast<Site *>(sitem);
+                                }
+                            }
+                        }
+                    }
+                    scene->addTrans(myStartItem1,myEndItem1);
+                }
+            }
+        }
+
+        //do the y-direction replication
+        if(imgEnd == 5) {
+            sindx = itransition->startItem()->id();
+            eindx = itransition->endItem()->id();
+            //loop over y-replicas
+            for(int ix = 0; ix < xexp; ix++) {
+                //add new 0 boundary transition
+                foreach (QGraphicsItem *sitem, scene->items()) {
+                    if (sitem->type() == Site::Type) {
+                        if(qgraphicsitem_cast<Site *>(sitem)->yr() == (yexp-1) && qgraphicsitem_cast<Site *>(sitem)->xr() == ix)
+                            {
+                                if(qgraphicsitem_cast<Site *>(sitem)->id() == eindx && qgraphicsitem_cast<Site *>(sitem)->img() == 5)
+                                {
+                                    myStartItem1 = qgraphicsitem_cast<Site *>(sitem);
+                                }
+                            }
+                        if(qgraphicsitem_cast<Site *>(sitem)->yr() == 0 && qgraphicsitem_cast<Site *>(sitem)->xr() == ix)
+                        {
+                            if(qgraphicsitem_cast<Site *>(sitem)->id() == sindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                            {
+                                myEndItem1 = qgraphicsitem_cast<Site *>(sitem);
+                            }
+                         }
+                    }
+                }
+                //add new yexp boundary transition
+                foreach (QGraphicsItem *sitem, scene->items()) {
+                    if (sitem->type() == Site::Type) {
+                        if(qgraphicsitem_cast<Site *>(sitem)->yr() == 0 && qgraphicsitem_cast<Site *>(sitem)->xr() == ix)
+                        {
+                            if(qgraphicsitem_cast<Site *>(sitem)->id() == sindx && qgraphicsitem_cast<Site *>(sitem)->img() == 1)
+                            {
+                                myStartItem2 = qgraphicsitem_cast<Site *>(sitem);
+                            }
+                        }
+                        if(qgraphicsitem_cast<Site *>(sitem)->yr() == (yexp-1) && qgraphicsitem_cast<Site *>(sitem)->xr() == ix)
+                        {
+                            if(qgraphicsitem_cast<Site *>(sitem)->id() == eindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                             {
+                                 myEndItem2 = qgraphicsitem_cast<Site *>(sitem);
+                             }
+                        }
+                    }
+                }
+                scene->addTransPair(myStartItem1,myEndItem1,myStartItem2,myEndItem2);
+
+                //add inter-replica transitions
+                for(int iy = 0; iy < (yexp-1); iy++) {
+                    foreach (QGraphicsItem *sitem, scene->items()) {
+                        if (sitem->type() == Site::Type) {
+                            if(qgraphicsitem_cast<Site *>(sitem)->yr() == iy && qgraphicsitem_cast<Site *>(sitem)->xr() == ix)
+                            {
+                                if(qgraphicsitem_cast<Site *>(sitem)->id() == eindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                                {
+                                    myStartItem1 = qgraphicsitem_cast<Site *>(sitem);
+                                }
+                            }
+                            if(qgraphicsitem_cast<Site *>(sitem)->yr() == (iy+1) && qgraphicsitem_cast<Site *>(sitem)->xr() == ix)
+                            {
+                                if(qgraphicsitem_cast<Site *>(sitem)->id() == sindx && qgraphicsitem_cast<Site *>(sitem)->img() == 0)
+                                {
+                                    myEndItem1 = qgraphicsitem_cast<Site *>(sitem);
+                                }
+                            }
+                        }
+                    }
+                    scene->addTrans(myStartItem1,myEndItem1);
+                }
+            }
+        }
+    }
+
+    //delete the old boundary transitions
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Transition::Type) {
+            Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+            imgStart = itransition->startItem()->img();
+            imgEnd = itransition->endItem()->img();
+            int isx = itransition->startItem()->xr();
+            int isy = itransition->startItem()->yr();
+            int iex = itransition->endItem()->xr();
+            int iey = itransition->endItem()->yr();
+            if(isx == 0 && isy == 0 && iex == 0 && iey == 0 && imgStart != 0 && imgEnd == 0) {
+                scene->removeItem(item);
+                itransition->startItem()->removeTransition(itransition);
+                itransition->endItem()->removeTransition(itransition);
+                delete item;
+            } else if(iex == 0 && iey == 0 && isx == 0 && isy == 0 && imgStart == 0 && imgEnd != 0) {
+                scene->removeItem(item);
+                itransition->startItem()->removeTransition(itransition);
+                itransition->endItem()->removeTransition(itransition);
+                delete item;
+            }
+
+        }
+    }
 }
 
+//launch about program dialog box
 void MainWindow::about()
-{    
+{
     QMessageBox::about(this, tr("About "),
             tr("<p><b>KMC2D version 0.22</b></p>"
                "<br> "
@@ -335,6 +591,7 @@ void MainWindow::about()
 
 }
 
+//create the left hand side toolbox
 void MainWindow::createToolBox()
 {
     QGridLayout *sceneButtonLayout = new QGridLayout;
@@ -544,6 +801,7 @@ void MainWindow::setupMatrix()
     view->setMatrix(matrix);
 }
 
+//draw the periodic cells and the mask
 void MainWindow::drawCells()
 {
     pcell1 = new QGraphicsRectItem;
@@ -659,6 +917,7 @@ void MainWindow::drawCells()
     scene->addItem(pcellc8);
 }
 
+//replot the periodic cells and mask for the toggle signal
 void MainWindow::redrawCells()
 {
     pcell1->setRect(0,ycell, xcell, ycell);

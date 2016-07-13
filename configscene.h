@@ -21,7 +21,9 @@ class QPointF;
 class QGraphicsLineItem;
 class QFont;
 class QGraphicsTextItem;
+class QGraphicsItem;
 class QColor;
+class Site;
 QT_END_NAMESPACE
 
 class ConfigScene : public QGraphicsScene
@@ -32,7 +34,9 @@ public:
     enum Mode { InsertUSite, InsertSite, InsertTrans, MoveItem };
 
     explicit ConfigScene(QMenu *siteMenu, QMenu *transMenu,int xc, int yc, QObject *parent = 0);
-    void addSite(bool ostate, double xc, double yc);
+    void addSite(bool ostate, double xc, double yc, int sindx, int xrep, int yrep);
+    void addTrans(Site *myStartItem, Site *myEndItem);
+    void addTransPair(Site *myStartItem1, Site *myEndItem1,Site *myStartItem2, Site *myEndItem2);
 
     int getGridSize() const { return this->gridSize; }
     bool getSnap() { return this->snap; }

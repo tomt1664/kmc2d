@@ -31,7 +31,7 @@ ConfigScene::ConfigScene(QMenu *siteMenu, QMenu *transMenu, int xc, int yc, QObj
     snap = false;
 }
 
-void ConfigScene::addSite(bool ostate, double xc, double yc)
+void ConfigScene::addSite(bool ostate, double xc, double yc, int sindx, int xrep, int yrep)
 {
     Site *item;
     //periodic images
@@ -45,6 +45,8 @@ void ConfigScene::addSite(bool ostate, double xc, double yc)
     } else {
         item->off();
     }
+    item->setID(sindx);
+    item->setRep(xrep,yrep);
     QPointF xper1(0,ycell), xper2(xcell,ycell), xper3(xcell,0), xper4(xcell,-ycell);
     QPointF xper5(0,-ycell), xper6(-xcell,-ycell), xper7(-xcell,0), xper8(-xcell,ycell);
     image1 = new Site(0,1,mySiteMenu);
@@ -74,6 +76,22 @@ void ConfigScene::addSite(bool ostate, double xc, double yc)
         image7->off();
         image8->off();
     }
+    image1->setID(sindx);
+    image2->setID(sindx);
+    image3->setID(sindx);
+    image4->setID(sindx);
+    image5->setID(sindx);
+    image6->setID(sindx);
+    image7->setID(sindx);
+    image8->setID(sindx);
+    image1->setRep(xrep,yrep);
+    image2->setRep(xrep,yrep);
+    image3->setRep(xrep,yrep);
+    image4->setRep(xrep,yrep);
+    image5->setRep(xrep,yrep);
+    image6->setRep(xrep,yrep);
+    image7->setRep(xrep,yrep);
+    image8->setRep(xrep,yrep);
     image1->setParentItem(item);
     image2->setParentItem(item);
     image3->setParentItem(item);
@@ -93,6 +111,43 @@ void ConfigScene::addSite(bool ostate, double xc, double yc)
     image7->setPos(xper7);
     image8->setPos(xper8);
 }
+
+void ConfigScene::addTrans(Site *myStartItem, Site *myEndItem)
+{
+    Transition *transition = new Transition(myTransMenu, myStartItem, myEndItem);
+    transition->setColor(myLineColor);
+    myStartItem->addTransition(transition);
+    myEndItem->addTransition(transition);
+    transition->setZValue(-1000.0);
+    transition->setID(0);
+    addItem(transition);
+    transition->updatePosition();
+}
+
+void ConfigScene::addTransPair(Site *myStartItem1, Site *myEndItem1,Site *myStartItem2, Site *myEndItem2)
+{
+    Transition *transition1 = new Transition(myTransMenu, myStartItem1, myEndItem1);
+    transition1->setColor(myLineColor);
+    myStartItem1->addTransition(transition1);
+    myEndItem1->addTransition(transition1);
+    transition1->setZValue(-1000.0);
+    transition1->setID(indx);
+    addItem(transition1);
+    transition1->updatePosition();
+
+    Transition *transition2 = new Transition(myTransMenu, myStartItem2, myEndItem2);
+    transition2->setColor(myLineColor);
+    myStartItem2->addTransition(transition2);
+    myEndItem2->addTransition(transition2);
+    transition2->setZValue(-1000.0);
+    transition2->setID(indx);
+    addItem(transition2);
+    transition2->updatePosition();
+
+    indx++;
+}
+
+
 
 void ConfigScene::setMode(Mode mode)
 {
@@ -298,7 +353,6 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                     startImage = qgraphicsitem_cast<Site *>(item);
                     if(startImage->img() == opimage) break;
                 }
-
                 endImage = qgraphicsitem_cast<Site *>(endItem->parentItem());
 
                 //mirror transition
@@ -310,7 +364,6 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 mtransition->setID(indx);
                 addItem(mtransition);
                 mtransition->updatePosition();
-
                 indx++;
             }
         }

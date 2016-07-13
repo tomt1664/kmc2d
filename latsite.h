@@ -49,6 +49,11 @@ public:
     void off() { state = 0; }
     int stat() { return state; }
     int img() { return m_img; }
+    void setID(int id) { m_id = id; }
+    int id() { return m_id; }
+    void setRep(int xrep, int yrep) { m_xrep = xrep; m_yrep = yrep; }
+    int xr() { return m_xrep; }
+    int yr() { return m_yrep; }
 
     QRectF boundingRect() const Q_DECL_OVERRIDE;
     QPainterPath shape() const Q_DECL_OVERRIDE;
@@ -65,6 +70,8 @@ private:
     int m_img; // set to 1 if the object is a periodic image
     QMenu *myContextMenu;
     QList<Transition *> transitions; // list of site transitions
+    int m_id; // indexing
+    int m_xrep,m_yrep; // replication indexing
 };
 
 #endif // LATSITE_H
