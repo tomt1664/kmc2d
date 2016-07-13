@@ -574,6 +574,27 @@ void MainWindow::expandSystem()
     }
 }
 
+void MainWindow::min1Changed()
+{
+    double energy = min1SpinBox->value();
+
+    curveDisplay->setMin1(energy);
+}
+
+void MainWindow::min2Changed()
+{
+    double energy = min2SpinBox->value();
+
+    curveDisplay->setMin2(energy);
+}
+
+void MainWindow::barChanged()
+{
+    double energy = barSpinBox->value();
+
+    curveDisplay->setBar(energy);
+}
+
 //launch about program dialog box
 void MainWindow::about()
 {
@@ -674,16 +695,43 @@ void MainWindow::createToolBox()
     connect(cellSizeButton, SIGNAL(clicked()),this,SLOT(changeCellSize()));
     connect(expandButton, SIGNAL(clicked()),this,SLOT(expandSystem()));
 
-//    QGridLayout *layout = new QGridLayout;
-//    layout->addWidget(createCellWidget(tr("Site")), 0, 0);
+    curveDisplay = new CurveDisplay;
 
-//    layout->setRowStretch(3, 10);
-//    layout->setColumnStretch(2, 10);
+    min1SpinBox = new QDoubleSpinBox;
+    min1SpinBox->setRange(-5, 5);
+    min1SpinBox->setSingleStep(0.1);
+    min1SpinBox->setValue(0.0);
 
+    barSpinBox = new QDoubleSpinBox;
+    barSpinBox->setRange(-5, 9);
+    barSpinBox->setSingleStep(0.1);
+    barSpinBox->setValue(1.0);
 
+    min2SpinBox = new QDoubleSpinBox;
+    min2SpinBox->setRange(-5, 5);
+    min2SpinBox->setSingleStep(0.1);
+    min2SpinBox->setValue(0.0);
+
+    connect(min1SpinBox, SIGNAL(valueChanged(double)),
+            this, SLOT(min1Changed()));
+    connect(min2SpinBox, SIGNAL(valueChanged(double)),
+            this, SLOT(min2Changed()));
+    connect(barSpinBox, SIGNAL(valueChanged(double)),
+            this, SLOT(barChanged()));
+
+    QHBoxLayout *energiesLayout = new QHBoxLayout;
+    energiesLayout->addWidget(min1SpinBox);
+    energiesLayout->addWidget(barSpinBox);
+    energiesLayout->addWidget(min2SpinBox);
+
+    QVBoxLayout *createBox = new QVBoxLayout;
+    createBox->addLayout(sceneButtonLayout);
+    createBox->addWidget(curveDisplay);
+    createBox->addLayout(energiesLayout);
+    createBox->addStretch(0);
 
     QWidget *itemWidget = new QWidget;
-    itemWidget->setLayout(sceneButtonLayout);
+    itemWidget->setLayout(createBox);
 
     backgroundButtonGroup = new QButtonGroup(this);
     connect(backgroundButtonGroup, SIGNAL(buttonClicked(QAbstractButton*)),

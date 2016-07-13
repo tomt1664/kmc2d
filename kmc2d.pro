@@ -5,14 +5,16 @@ HEADERS	    =   mainwindow.h \
 		configscene.h \
 		trans.h \
     cellsizedialog.h \
-    expanddialog.h
+    expanddialog.h \
+    curvedisplay.h
 SOURCES	    =   mainwindow.cpp \
 		latsite.cpp \
 		main.cpp \
 		trans.cpp \
 		configscene.cpp \
     cellsizedialog.cpp \
-    expanddialog.cpp
+    expanddialog.cpp \
+    curvedisplay.cpp
 RESOURCES   =	kmc2d.qrc
 
 

@@ -11,8 +11,11 @@
 #define MAINWINDOW_H
 
 #include "latsite.h"
+#include "curvedisplay.h"
 
 #include <QMainWindow>
+#include <QWidget>
+#include <QtWidgets>
 
 class ConfigScene;
 
@@ -31,6 +34,7 @@ class QAbstractButton;
 class QGraphicsView;
 class QSlider;
 QT_END_NAMESPACE
+class CurveDisplay;
 
 
 class MainWindow : public QMainWindow
@@ -51,6 +55,10 @@ private slots:
     void setupMatrix();
     void about();
 
+    void min1Changed();
+    void min2Changed();
+    void barChanged();
+
 private:
     void createToolBox();
     void createActions();
@@ -65,6 +73,8 @@ private:
     QGraphicsView *view;
     QGraphicsRectItem *cell;
     QGraphicsRectItem *perarea;
+
+    CurveDisplay *curveDisplay;
 
     QAction *exitAction;
     QAction *addAction;
@@ -95,6 +105,10 @@ private:
     QToolButton *expandButton;
 
     QSlider *zoomSlider;
+
+    QDoubleSpinBox *barSpinBox;
+    QDoubleSpinBox *min1SpinBox;
+    QDoubleSpinBox *min2SpinBox;
 
     int xcell;
     int ycell;
