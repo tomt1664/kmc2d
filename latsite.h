@@ -43,11 +43,14 @@ public:
     void updateTrans();
     int type() const Q_DECL_OVERRIDE { return Type;}
 
+    //physical state
     void setEn(float en) { energy = en; }
     float en() { return energy; }
     void on() { state = 1; }
     void off() { state = 0; }
     int stat() { return state; }
+
+    //periodic cell information
     int img() { return m_img; }
     void setID(int id) { m_id = id; }
     int id() { return m_id; }
@@ -65,7 +68,7 @@ protected:
 
 private:
     QColor color;
-    float energy;  // the potential energy level of the state
+    double energy;  // the potential energy level of the state
     int state;  // the occupation: 0 = unoccupied, 1 = occupied
     int m_img; // set to 1 if the object is a periodic image
     QMenu *myContextMenu;

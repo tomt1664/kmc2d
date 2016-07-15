@@ -43,6 +43,10 @@ public:
     void setSnap(bool dosnap) { snap = dosnap; }
     void changeCell(int xcelln, int ycelln) { xcell = xcelln; ycell = ycelln; }
 
+    void setTransMin1(double energy);
+    void setTransMin2(double energy);
+    void setTransBar(double energy);
+
 public slots:
     void setMode(Mode mode);
 

@@ -32,6 +32,9 @@ MainWindow::MainWindow()
     scene->setSceneRect(QRectF(0, 0, xcell, ycell));
     scene->setBackgroundBrush(Qt::lightGray);
 
+    connect(scene, SIGNAL(itemSelected(QGraphicsItem*)),
+                this, SLOT(itemSelected(QGraphicsItem*)));
+
     //draw the simulation cell white on the gray background
     cell = new QGraphicsRectItem;
     cell->setRect(0, 0, xcell, ycell);
@@ -574,11 +577,21 @@ void MainWindow::expandSystem()
     }
 }
 
+void MainWindow::itemSelected(QGraphicsItem *item)
+{
+    Transition *transition = qgraphicsitem_cast<Transition *>(item);
+    double baren = transition->en();
+    qDebug() << baren;
+    barSpinBox->setValue(baren);
+}
+
 void MainWindow::min1Changed()
 {
     double energy = min1SpinBox->value();
 
     curveDisplay->setMin1(energy);
+
+    scene->setTransMin1(energy);
 }
 
 void MainWindow::min2Changed()
@@ -586,6 +599,8 @@ void MainWindow::min2Changed()
     double energy = min2SpinBox->value();
 
     curveDisplay->setMin2(energy);
+
+    scene->setTransMin2(energy);
 }
 
 void MainWindow::barChanged()
@@ -593,6 +608,8 @@ void MainWindow::barChanged()
     double energy = barSpinBox->value();
 
     curveDisplay->setBar(energy);
+
+    scene->setTransBar(energy);
 }
 
 //launch about program dialog box

@@ -318,6 +318,8 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 endItem->addTransition(transition);
                 transition->setZValue(-1000.0);
                 transition->setID(0);
+                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
+                        this, SIGNAL(itemSelected(QGraphicsItem*)));
                 addItem(transition);
                 transition->updatePosition();
             }
@@ -331,6 +333,8 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 endItem->addTransition(transition);
                 transition->setZValue(-1000.0);
                 transition->setID(indx);
+//                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
+//                        this, SIGNAL(itemSelected(QGraphicsItem*)));
                 addItem(transition);
                 transition->updatePosition();
 
@@ -362,6 +366,8 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 endImage->addTransition(mtransition);
                 mtransition->setZValue(-1000.0);
                 mtransition->setID(indx);
+//                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
+//                        this, SIGNAL(itemSelected(QGraphicsItem*)));
                 addItem(mtransition);
                 mtransition->updatePosition();
                 indx++;
@@ -382,3 +388,26 @@ bool ConfigScene::isItemChange(int type)
     return false;
 }
 
+void ConfigScene::setTransMin1(double energy)
+{
+    if (isItemChange(Transition::Type)) {
+        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
+        item->startItem()->setEn(energy);
+    }
+}
+
+void ConfigScene::setTransMin2(double energy)
+{
+    if (isItemChange(Transition::Type)) {
+        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
+        item->endItem()->setEn(energy);
+    }
+}
+
+void ConfigScene::setTransBar(double energy)
+{
+    if (isItemChange(Transition::Type)) {
+        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
+        item->setEn(energy);
+    }
+}

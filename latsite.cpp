@@ -40,6 +40,8 @@ Site::Site(int stat, int img, QMenu *contextMenu, QGraphicsItem *parent)
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
 
     setZValue(-10);
+
+    energy = 0.0;
 }
 
 void Site::removeTransition(Transition *transition)

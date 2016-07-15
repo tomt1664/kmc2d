@@ -8,6 +8,7 @@
 ****************************************************************************/
 
 #include "trans.h"
+#include "configscene.h"
 
 #include <math.h>
 
@@ -33,6 +34,7 @@ Transition::Transition(QMenu *contextMenu, Site *startItem, Site *endItem, QGrap
 
     setPen(QPen(Qt::darkGray, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     setZValue(-50);
+    m_en = 1.0;
 }
 
 QRectF Transition::boundingRect() const
@@ -87,3 +89,11 @@ void Transition::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
     myContextMenu->exec(event->screenPos());
 }
 
+QVariant Transition::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    if (change == QGraphicsItem::ItemSelectedHasChanged)
+    {
+        emit selectedChange(this);
+    }
+    return value;
+}

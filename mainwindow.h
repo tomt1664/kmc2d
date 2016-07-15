@@ -54,6 +54,7 @@ private slots:
     void expandSystem();
     void setupMatrix();
     void about();
+    void itemSelected(QGraphicsItem *item);
 
     void min1Changed();
     void min2Changed();
