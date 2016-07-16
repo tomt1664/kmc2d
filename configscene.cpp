@@ -320,6 +320,8 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 transition->setID(0);
                 connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
                         this, SIGNAL(itemSelected(QGraphicsItem*)));
+                connect(transition, SIGNAL(deselectedChange(QGraphicsItem*)),
+                        this, SIGNAL(itemdeSelected(QGraphicsItem*)));
                 addItem(transition);
                 transition->updatePosition();
             }
@@ -333,8 +335,10 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 endItem->addTransition(transition);
                 transition->setZValue(-1000.0);
                 transition->setID(indx);
-//                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
-//                        this, SIGNAL(itemSelected(QGraphicsItem*)));
+                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
+                        this, SIGNAL(itemSelected(QGraphicsItem*)));
+                connect(transition, SIGNAL(deselectedChange(QGraphicsItem*)),
+                        this, SIGNAL(itemdeSelected(QGraphicsItem*)));
                 addItem(transition);
                 transition->updatePosition();
 
@@ -366,8 +370,10 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 endImage->addTransition(mtransition);
                 mtransition->setZValue(-1000.0);
                 mtransition->setID(indx);
-//                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
-//                        this, SIGNAL(itemSelected(QGraphicsItem*)));
+                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
+                        this, SIGNAL(itemSelected(QGraphicsItem*)));
+                connect(transition, SIGNAL(deselectedChange(QGraphicsItem*)),
+                        this, SIGNAL(itemdeSelected(QGraphicsItem*)));
                 addItem(mtransition);
                 mtransition->updatePosition();
                 indx++;
@@ -390,24 +396,69 @@ bool ConfigScene::isItemChange(int type)
 
 void ConfigScene::setTransMin1(double energy)
 {
+    int tid;
     if (isItemChange(Transition::Type)) {
         Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
         item->startItem()->setEn(energy);
+        tid = item->id();
+        //set energy of image boundary transition
+        if(tid > 0) {
+            foreach(QGraphicsItem *item, this->items()) {
+                if (item->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+                    if(itransition->id() == tid)
+                    {
+                        itransition->startItem()->setEn(energy);
+                        qDebug() << "set min1 m" << tid;
+                    }
+                }
+            }
+        }
     }
 }
 
 void ConfigScene::setTransMin2(double energy)
 {
+    int tid;
     if (isItemChange(Transition::Type)) {
         Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
         item->endItem()->setEn(energy);
+        tid = item->id();
+        //set energy of image boundary transition
+        if(tid > 0) {
+            foreach(QGraphicsItem *item, this->items()) {
+                if (item->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+                    if(itransition->id() == tid)
+                    {
+                        itransition->endItem()->setEn(energy);
+                        qDebug() << "set min2 m" << tid;
+                    }
+                }
+            }
+        }
     }
 }
 
 void ConfigScene::setTransBar(double energy)
 {
+    int tid;
     if (isItemChange(Transition::Type)) {
         Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
         item->setEn(energy);
+        tid = item->id();
+        //set energy of image boundary transition
+        if(tid > 0) {
+            foreach(QGraphicsItem *item, this->items()) {
+                if (item->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+                    if(itransition->id() == tid)
+                    {
+                        itransition->setEn(energy);
+                        qDebug() << "set bar m" << tid;
+                    }
+                }
+            }
+        }
     }
 }

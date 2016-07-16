@@ -52,6 +52,7 @@ public slots:
 
 signals:
     void itemSelected(QGraphicsItem *item);
+    void itemdeSelected(QGraphicsItem *item);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) Q_DECL_OVERRIDE;

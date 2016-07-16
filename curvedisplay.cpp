@@ -21,7 +21,7 @@ CurveDisplay::CurveDisplay(QWidget *parent)
     //initial energies
     m_min1 = 0.0;
     m_min2 = 0.0;
-    m_bar = 1.0;
+    m_bar = 0.0;
 }
 
 QSize CurveDisplay::size() const
@@ -56,6 +56,11 @@ void CurveDisplay::setBar(double bar)
 void CurveDisplay::paintEvent(QPaintEvent * /* event */)
 {
     QPainter painter(this);
+
+    if(m_bar == 0.0 && m_min1 == 0.0 && m_min2 == 0.0) {
+        return;
+    }
+
     painter.setPen(QPen(Qt::blue, 2));
     painter.setBrush(brush);
 

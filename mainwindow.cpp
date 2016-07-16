@@ -34,6 +34,8 @@ MainWindow::MainWindow()
 
     connect(scene, SIGNAL(itemSelected(QGraphicsItem*)),
                 this, SLOT(itemSelected(QGraphicsItem*)));
+    connect(scene, SIGNAL(itemdeSelected(QGraphicsItem*)),
+                this, SLOT(itemdeSelected(QGraphicsItem*)));
 
     //draw the simulation cell white on the gray background
     cell = new QGraphicsRectItem;
@@ -577,38 +579,54 @@ void MainWindow::expandSystem()
     }
 }
 
+//update spinboxes to selected transition properties
 void MainWindow::itemSelected(QGraphicsItem *item)
 {
     Transition *transition = qgraphicsitem_cast<Transition *>(item);
     double baren = transition->en();
-    qDebug() << baren;
+    double min1 = transition->startItem()->en();
+    double min2 = transition->endItem()->en();
+    barSpinBox->setReadOnly(false);
+    min1SpinBox->setReadOnly(false);
+    min2SpinBox->setReadOnly(false);
     barSpinBox->setValue(baren);
+    min1SpinBox->setValue(min1);
+    min2SpinBox->setValue(min2);
 }
 
+//item deselected
+void MainWindow::itemdeSelected(QGraphicsItem *item)
+{
+    barSpinBox->setValue(0.0);
+    min1SpinBox->setValue(0.0);
+    min2SpinBox->setValue(0.0);
+    barSpinBox->setReadOnly(true);
+    min1SpinBox->setReadOnly(true);
+    min2SpinBox->setReadOnly(true);
+}
+
+
+//update the graph view and site properties on spinbox change
 void MainWindow::min1Changed()
 {
     double energy = min1SpinBox->value();
-
     curveDisplay->setMin1(energy);
-
     scene->setTransMin1(energy);
 }
 
+//update the graph view and site properties on spinbox change
 void MainWindow::min2Changed()
 {
     double energy = min2SpinBox->value();
-
     curveDisplay->setMin2(energy);
-
     scene->setTransMin2(energy);
 }
 
+//update the graph view and transition property on spinbox change
 void MainWindow::barChanged()
 {
     double energy = barSpinBox->value();
-
     curveDisplay->setBar(energy);
-
     scene->setTransBar(energy);
 }
 
@@ -718,16 +736,19 @@ void MainWindow::createToolBox()
     min1SpinBox->setRange(-5, 5);
     min1SpinBox->setSingleStep(0.1);
     min1SpinBox->setValue(0.0);
+    min1SpinBox->setReadOnly(true);
 
     barSpinBox = new QDoubleSpinBox;
     barSpinBox->setRange(-5, 9);
     barSpinBox->setSingleStep(0.1);
-    barSpinBox->setValue(1.0);
+    barSpinBox->setValue(0.0);
+    barSpinBox->setReadOnly(true);
 
     min2SpinBox = new QDoubleSpinBox;
     min2SpinBox->setRange(-5, 5);
     min2SpinBox->setSingleStep(0.1);
     min2SpinBox->setValue(0.0);
+    min2SpinBox->setReadOnly(true);
 
     connect(min1SpinBox, SIGNAL(valueChanged(double)),
             this, SLOT(min1Changed()));

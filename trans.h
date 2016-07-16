@@ -55,17 +55,12 @@ public:
 
 signals:
     void selectedChange(QGraphicsItem *item);
+    void deselectedChange(QGraphicsItem *item);
 
 protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) Q_DECL_OVERRIDE;
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) Q_DECL_OVERRIDE;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) Q_DECL_OVERRIDE;
-
-//    void mousePressEvent(QGraphicsSceneMouseEvent *event)
-//    {
-//        emit selectedChange(this);
-//                qDebug() << "Bar" << m_en << " " << this->startItem()->en() << " " << this->endItem()->en();
-//    }
 
 private:
     int m_id;

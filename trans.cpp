@@ -93,7 +93,13 @@ QVariant Transition::itemChange(GraphicsItemChange change, const QVariant &value
 {
     if (change == QGraphicsItem::ItemSelectedHasChanged)
     {
+    if(value == true)
+    {
         emit selectedChange(this);
+    } else
+    {
+        emit deselectedChange(this);
     }
+   }
     return value;
 }
