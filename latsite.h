@@ -37,18 +37,18 @@ public:
 
     Site(int stat, int img, QMenu *contextMenu, QGraphicsItem *parent = 0);
 
+    int type() const Q_DECL_OVERRIDE { return Type;}
     void removeTransition(Transition *transition);
     void removeTransitions();
     void addTransition(Transition *transition);
     void updateTrans();
-    int type() const Q_DECL_OVERRIDE { return Type;}
 
     //physical state
     void setEn(float en) { energy = en; }
     float en() { return energy; }
-    void on() { state = 1; }
+    void on() { state = 1; }  //turn occupation on and off
     void off() { state = 0; }
-    int stat() { return state; }
+    int stat() { return state; } // return occupation
 
     //periodic cell information
     int img() { return m_img; }

@@ -140,6 +140,7 @@ void Site::updateTrans()
 
 QVariant Site::itemChange(GraphicsItemChange change, const QVariant &value)
 {
+    //move all the child (periodic image) items
     if (change == QGraphicsItem::ItemPositionChange) {
         foreach (Transition *transition, transitions) {
                transition->updatePosition();

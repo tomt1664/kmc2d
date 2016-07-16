@@ -31,7 +31,7 @@ ConfigScene::ConfigScene(QMenu *siteMenu, QMenu *transMenu, int xc, int yc, QObj
     snap = false;
 }
 
-void ConfigScene::addSite(bool ostate, double xc, double yc, int sindx, int xrep, int yrep)
+void ConfigScene::addSite(bool ostate,double en, double xc, double yc, int sindx, int xrep, int yrep)
 {
     Site *item;
     //periodic images
@@ -45,6 +45,7 @@ void ConfigScene::addSite(bool ostate, double xc, double yc, int sindx, int xrep
     } else {
         item->off();
     }
+    item->setEn(en);
     item->setID(sindx);
     item->setRep(xrep,yrep);
     QPointF xper1(0,ycell), xper2(xcell,ycell), xper3(xcell,0), xper4(xcell,-ycell);
@@ -84,6 +85,14 @@ void ConfigScene::addSite(bool ostate, double xc, double yc, int sindx, int xrep
     image6->setID(sindx);
     image7->setID(sindx);
     image8->setID(sindx);
+    image1->setEn(en);
+    image2->setEn(en);
+    image3->setEn(en);
+    image4->setEn(en);
+    image5->setEn(en);
+    image6->setEn(en);
+    image7->setEn(en);
+    image8->setEn(en);
     image1->setRep(xrep,yrep);
     image2->setRep(xrep,yrep);
     image3->setRep(xrep,yrep);
@@ -112,7 +121,7 @@ void ConfigScene::addSite(bool ostate, double xc, double yc, int sindx, int xrep
     image8->setPos(xper8);
 }
 
-void ConfigScene::addTrans(Site *myStartItem, Site *myEndItem)
+void ConfigScene::addTrans(Site *myStartItem, Site *myEndItem, double nbar)
 {
     Transition *transition = new Transition(myTransMenu, myStartItem, myEndItem);
     transition->setColor(myLineColor);
@@ -120,11 +129,16 @@ void ConfigScene::addTrans(Site *myStartItem, Site *myEndItem)
     myEndItem->addTransition(transition);
     transition->setZValue(-1000.0);
     transition->setID(0);
+    transition->setEn(nbar);
+    connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
+            this, SIGNAL(itemSelected(QGraphicsItem*)));
+    connect(transition, SIGNAL(deselectedChange(QGraphicsItem*)),
+            this, SIGNAL(itemdeSelected(QGraphicsItem*)));
     addItem(transition);
     transition->updatePosition();
 }
 
-void ConfigScene::addTransPair(Site *myStartItem1, Site *myEndItem1,Site *myStartItem2, Site *myEndItem2)
+void ConfigScene::addTransPair(Site *myStartItem1, Site *myEndItem1,Site *myStartItem2, Site *myEndItem2, double nbar)
 {
     Transition *transition1 = new Transition(myTransMenu, myStartItem1, myEndItem1);
     transition1->setColor(myLineColor);
@@ -132,6 +146,11 @@ void ConfigScene::addTransPair(Site *myStartItem1, Site *myEndItem1,Site *myStar
     myEndItem1->addTransition(transition1);
     transition1->setZValue(-1000.0);
     transition1->setID(indx);
+    transition1->setEn(nbar);
+    connect(transition1, SIGNAL(selectedChange(QGraphicsItem*)),
+            this, SIGNAL(itemSelected(QGraphicsItem*)));
+    connect(transition1, SIGNAL(deselectedChange(QGraphicsItem*)),
+            this, SIGNAL(itemdeSelected(QGraphicsItem*)));
     addItem(transition1);
     transition1->updatePosition();
 
@@ -141,13 +160,16 @@ void ConfigScene::addTransPair(Site *myStartItem1, Site *myEndItem1,Site *myStar
     myEndItem2->addTransition(transition2);
     transition2->setZValue(-1000.0);
     transition2->setID(indx);
+    transition2->setEn(nbar);
+    connect(transition2, SIGNAL(selectedChange(QGraphicsItem*)),
+            this, SIGNAL(itemSelected(QGraphicsItem*)));
+    connect(transition2, SIGNAL(deselectedChange(QGraphicsItem*)),
+            this, SIGNAL(itemdeSelected(QGraphicsItem*)));
     addItem(transition2);
     transition2->updatePosition();
 
     indx++;
 }
-
-
 
 void ConfigScene::setMode(Mode mode)
 {
@@ -370,9 +392,9 @@ void ConfigScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 endImage->addTransition(mtransition);
                 mtransition->setZValue(-1000.0);
                 mtransition->setID(indx);
-                connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
+                connect(mtransition, SIGNAL(selectedChange(QGraphicsItem*)),
                         this, SIGNAL(itemSelected(QGraphicsItem*)));
-                connect(transition, SIGNAL(deselectedChange(QGraphicsItem*)),
+                connect(mtransition, SIGNAL(deselectedChange(QGraphicsItem*)),
                         this, SIGNAL(itemdeSelected(QGraphicsItem*)));
                 addItem(mtransition);
                 mtransition->updatePosition();
@@ -400,16 +422,16 @@ void ConfigScene::setTransMin1(double energy)
     if (isItemChange(Transition::Type)) {
         Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
         item->startItem()->setEn(energy);
+
         tid = item->id();
         //set energy of image boundary transition
         if(tid > 0) {
-            foreach(QGraphicsItem *item, this->items()) {
-                if (item->type() == Transition::Type) {
-                    Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+            foreach(QGraphicsItem *titem, this->items()) {
+                if (titem->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(titem);
                     if(itransition->id() == tid)
                     {
                         itransition->startItem()->setEn(energy);
-                        qDebug() << "set min1 m" << tid;
                     }
                 }
             }
@@ -423,16 +445,16 @@ void ConfigScene::setTransMin2(double energy)
     if (isItemChange(Transition::Type)) {
         Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
         item->endItem()->setEn(energy);
+
         tid = item->id();
         //set energy of image boundary transition
         if(tid > 0) {
-            foreach(QGraphicsItem *item, this->items()) {
-                if (item->type() == Transition::Type) {
-                    Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+            foreach(QGraphicsItem *titem, this->items()) {
+                if (titem->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(titem);
                     if(itransition->id() == tid)
                     {
                         itransition->endItem()->setEn(energy);
-                        qDebug() << "set min2 m" << tid;
                     }
                 }
             }
@@ -455,7 +477,6 @@ void ConfigScene::setTransBar(double energy)
                     if(itransition->id() == tid)
                     {
                         itransition->setEn(energy);
-                        qDebug() << "set bar m" << tid;
                     }
                 }
             }

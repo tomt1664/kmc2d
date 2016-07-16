@@ -17,14 +17,13 @@
 #include <QtWidgets>
 #include <QDebug>
 
-const int InsertTextButton = 10;
-
 MainWindow::MainWindow()
 {
     createActions();
     createToolBox();
     createMenus();
 
+    //set initial cell dimensions
     xcell = 400;
     ycell = 400;
 
@@ -32,6 +31,7 @@ MainWindow::MainWindow()
     scene->setSceneRect(QRectF(0, 0, xcell, ycell));
     scene->setBackgroundBrush(Qt::lightGray);
 
+    //connect to configscene
     connect(scene, SIGNAL(itemSelected(QGraphicsItem*)),
                 this, SLOT(itemSelected(QGraphicsItem*)));
     connect(scene, SIGNAL(itemdeSelected(QGraphicsItem*)),
@@ -350,7 +350,9 @@ void MainWindow::expandSystem()
                          if((i+j) > 0) {
                              double xadd = item->x() + i*xcellOld;
                              double yadd = item->y() + j*ycellOld;
-                             scene->addSite(qgraphicsitem_cast<Site *>(item)->stat(),xadd,yadd,indx,i,j);
+                             int nsite = qgraphicsitem_cast<Site *>(item)->stat();
+                             double nen = qgraphicsitem_cast<Site *>(item)->en();
+                             scene->addSite(nsite,nen,xadd,yadd,indx,i,j);
                          }
                      }
                  }
@@ -388,7 +390,8 @@ void MainWindow::expandSystem()
                                     }
                                 }
                             }
-                            scene->addTrans(myStartItem,myEndItem);
+                            double nbar = itransition->en();
+                            scene->addTrans(myStartItem,myEndItem,nbar);
                         }
                     }
                 }
@@ -454,7 +457,8 @@ void MainWindow::expandSystem()
                         }
                     }
                 }
-                scene->addTransPair(myStartItem1,myEndItem1,myStartItem2,myEndItem2);
+                double nbar = itransition->en();
+                scene->addTransPair(myStartItem1,myEndItem1,myStartItem2,myEndItem2,nbar);
 
                 //add inter-replica transitions
                 for(int ix = 0; ix < (xexp-1); ix++) {
@@ -476,7 +480,8 @@ void MainWindow::expandSystem()
                             }
                         }
                     }
-                    scene->addTrans(myStartItem1,myEndItem1);
+                    nbar = itransition->en();
+                    scene->addTrans(myStartItem1,myEndItem1,nbar);
                 }
             }
         }
@@ -525,7 +530,8 @@ void MainWindow::expandSystem()
                         }
                     }
                 }
-                scene->addTransPair(myStartItem1,myEndItem1,myStartItem2,myEndItem2);
+                double nbar = itransition->en();
+                scene->addTransPair(myStartItem1,myEndItem1,myStartItem2,myEndItem2,nbar);
 
                 //add inter-replica transitions
                 for(int iy = 0; iy < (yexp-1); iy++) {
@@ -547,7 +553,8 @@ void MainWindow::expandSystem()
                             }
                         }
                     }
-                    scene->addTrans(myStartItem1,myEndItem1);
+                    nbar = itransition->en();
+                    scene->addTrans(myStartItem1,myEndItem1,nbar);
                 }
             }
         }
@@ -605,21 +612,32 @@ void MainWindow::itemdeSelected(QGraphicsItem *item)
     min2SpinBox->setReadOnly(true);
 }
 
-
 //update the graph view and site properties on spinbox change
 void MainWindow::min1Changed()
 {
     double energy = min1SpinBox->value();
+    double energy2 = min2SpinBox->value();
     curveDisplay->setMin1(energy);
     scene->setTransMin1(energy);
+//    if(energy > energy2) {
+//        barSpinBox->setMinimum(energy);
+//    } else {
+//        barSpinBox->setMinimum(energy2);
+//    }
 }
 
 //update the graph view and site properties on spinbox change
 void MainWindow::min2Changed()
 {
     double energy = min2SpinBox->value();
+    double energy2 = min1SpinBox->value();
     curveDisplay->setMin2(energy);
     scene->setTransMin2(energy);
+//    if(energy > energy2) {
+//        barSpinBox->setMinimum(energy);
+//    } else {
+//        barSpinBox->setMinimum(energy2);
+//    }
 }
 
 //update the graph view and transition property on spinbox change
