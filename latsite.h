@@ -44,11 +44,14 @@ public:
     void updateTrans();
 
     //physical state
-    void setEn(float en) { energy = en; }
+    void setEn(double en) { energy = en; }
     float en() { return energy; }
     void on() { state = 1; }  //turn occupation on and off
     void off() { state = 0; }
     int stat() { return state; } // return occupation
+    void setNNMod(int nn, double men) { nnmod[nn] = men; }
+    void setNNMod(double men1, double men2, double men3, double men4);
+    double nnMod(int nn) { return nnmod[nn]; }
 
     //periodic cell information
     int img() { return m_img; }
@@ -70,6 +73,8 @@ private:
     QColor color;
     double energy;  // the potential energy level of the state
     int state;  // the occupation: 0 = unoccupied, 1 = occupied
+    double nnmod [5]; // the change in energy for coordination
+
     int m_img; // set to 1 if the object is a periodic image
     QMenu *myContextMenu;
     QList<Transition *> transitions; // list of site transitions

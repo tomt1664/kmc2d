@@ -16,6 +16,15 @@
 
 #include <QtWidgets>
 #include <QDebug>
+#ifndef QT_NO_PRINTER
+#include <QPrinter>
+#include <QPrintDialog>
+#endif
+#include <QMessageBox>
+#include <QFileDialog>
+#include <QFile>
+#include <QXmlStreamWriter>
+#include <QXmlStreamReader>
 
 MainWindow::MainWindow()
 {
@@ -144,6 +153,27 @@ void MainWindow::deleteItem()
              scene->removeItem(item);
              delete item;
          }
+    }
+}
+
+//delete all items in the simulation cell (and images)
+void MainWindow::clearCell()
+{
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Transition::Type) {
+            scene->removeItem(item);
+            Transition *transition = qgraphicsitem_cast<Transition *>(item);
+            transition->startItem()->removeTransition(transition);
+            transition->endItem()->removeTransition(transition);
+            delete item;
+        }
+    }
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Site::Type) {
+            qgraphicsitem_cast<Site *>(item)->removeTransitions();
+            scene->removeItem(item);
+            delete item;
+        }
     }
 }
 
@@ -593,12 +623,27 @@ void MainWindow::itemSelected(QGraphicsItem *item)
     double baren = transition->en();
     double min1 = transition->startItem()->en();
     double min2 = transition->endItem()->en();
-    barSpinBox->setReadOnly(false);
-    min1SpinBox->setReadOnly(false);
-    min2SpinBox->setReadOnly(false);
+    barSpinBox->setDisabled(false);
+    min1SpinBox->setDisabled(false);
+    min2SpinBox->setDisabled(false);
     barSpinBox->setValue(baren);
     min1SpinBox->setValue(min1);
     min2SpinBox->setValue(min2);
+    startModifier->setDisabled(false);
+    endModifier->setDisabled(false);
+    startModSpinBox->setDisabled(false);
+    endModSpinBox->setDisabled(false);
+    startPreFactor->setDisabled(false);
+    endPreFactor->setDisabled(false);
+
+    double startpf = transition->startPrefac();
+    double endpf = transition->endPrefac();
+    double startmod = transition->startItem()->nnMod(1);
+    double endmod = transition->endItem()->nnMod(1);
+    startModSpinBox->setValue(startmod);
+    endModSpinBox->setValue(endmod);
+    startPreFactor->setValue(startpf);
+    endPreFactor->setValue(endpf);
 }
 
 //item deselected
@@ -607,37 +652,37 @@ void MainWindow::itemdeSelected(QGraphicsItem *item)
     barSpinBox->setValue(0.0);
     min1SpinBox->setValue(0.0);
     min2SpinBox->setValue(0.0);
-    barSpinBox->setReadOnly(true);
-    min1SpinBox->setReadOnly(true);
-    min2SpinBox->setReadOnly(true);
+    startModSpinBox->setValue(0.0);
+    endModSpinBox->setValue(0.0);
+    startPreFactor->setValue(0.0);
+    endPreFactor->setValue(0.0);
+    startModifier->setCurrentIndex(0);
+    endModifier->setCurrentIndex(0);
+    barSpinBox->setDisabled(true);
+    min1SpinBox->setDisabled(true);
+    min2SpinBox->setDisabled(true);
+    startModifier->setDisabled(true);
+    endModifier->setDisabled(true);
+    startModSpinBox->setDisabled(true);
+    endModSpinBox->setDisabled(true);
+    startPreFactor->setDisabled(true);
+    endPreFactor->setDisabled(true);
 }
 
 //update the graph view and site properties on spinbox change
 void MainWindow::min1Changed()
 {
     double energy = min1SpinBox->value();
-    double energy2 = min2SpinBox->value();
     curveDisplay->setMin1(energy);
     scene->setTransMin1(energy);
-//    if(energy > energy2) {
-//        barSpinBox->setMinimum(energy);
-//    } else {
-//        barSpinBox->setMinimum(energy2);
-//    }
 }
 
 //update the graph view and site properties on spinbox change
 void MainWindow::min2Changed()
 {
     double energy = min2SpinBox->value();
-    double energy2 = min1SpinBox->value();
     curveDisplay->setMin2(energy);
     scene->setTransMin2(energy);
-//    if(energy > energy2) {
-//        barSpinBox->setMinimum(energy);
-//    } else {
-//        barSpinBox->setMinimum(energy2);
-//    }
 }
 
 //update the graph view and transition property on spinbox change
@@ -646,6 +691,86 @@ void MainWindow::barChanged()
     double energy = barSpinBox->value();
     curveDisplay->setBar(energy);
     scene->setTransBar(energy);
+}
+
+//update the nn site energy modifier (start item)
+void MainWindow::startModChanged()
+{
+    double energy = startModSpinBox->value();
+    int nn = startModifier->currentIndex() + 1;
+    qDebug() << energy << " " << nn;
+    scene->setStartMod(nn, energy);
+}
+
+//update the nn site energy modifier (start item)
+void MainWindow::endModChanged()
+{
+    double energy = endModSpinBox->value();
+    int nn = endModifier->currentIndex() + 1;
+    qDebug() << energy << " " << nn;
+    scene->setEndMod(nn, energy);
+}
+
+//update the start-direction pre-factor
+void MainWindow::startPreFacChanged()
+{
+    double pf = startPreFactor->value();
+    qDebug() << pf;
+    scene->setStartPreFac(pf);
+}
+
+//update the start-direction pre-factor
+void MainWindow::endPreFacChanged()
+{
+    double pf = endPreFactor->value();
+    qDebug() << pf;
+    scene->setEndPreFac(pf);
+}
+
+//update spinbox value dependent on combobox
+void MainWindow::startModCBChanged()
+{
+    int nn = startModifier->currentIndex() + 1;
+    if(!scene->selectedItems().isEmpty()) {
+    Transition *transition = qgraphicsitem_cast<Transition *>(scene->selectedItems().front());
+    double pf = transition->startItem()->nnMod(nn);
+    startModSpinBox->setValue(pf);
+    }
+}
+
+//update spinbox value dependent on combobox
+void MainWindow::endModCBChanged()
+{
+    int nn = endModifier->currentIndex() + 1;
+    if(!scene->selectedItems().isEmpty()) {
+    Transition *transition = qgraphicsitem_cast<Transition *>(scene->selectedItems().front());
+    double pf = transition->endItem()->nnMod(nn);
+    endModSpinBox->setValue(pf);
+    }
+}
+
+//set site as occupied
+void MainWindow::occupied()
+{
+    foreach (QGraphicsItem *item, scene->selectedItems()) {
+        if (item->type() == Site::Type) {
+            Site *site = qgraphicsitem_cast<Site *>(item);
+            site->on();
+        }
+    }
+    scene->update();
+}
+
+//set site as unoccupied
+void MainWindow::unoccupied()
+{
+    foreach (QGraphicsItem *item, scene->selectedItems()) {
+        if (item->type() == Site::Type) {
+            Site *site = qgraphicsitem_cast<Site *>(item);
+            site->off();
+        }
+    }
+    scene->update();
 }
 
 //launch about program dialog box
@@ -754,19 +879,19 @@ void MainWindow::createToolBox()
     min1SpinBox->setRange(-5, 5);
     min1SpinBox->setSingleStep(0.1);
     min1SpinBox->setValue(0.0);
-    min1SpinBox->setReadOnly(true);
+    min1SpinBox->setDisabled(true);
 
     barSpinBox = new QDoubleSpinBox;
     barSpinBox->setRange(-5, 9);
     barSpinBox->setSingleStep(0.1);
     barSpinBox->setValue(0.0);
-    barSpinBox->setReadOnly(true);
+    barSpinBox->setDisabled(true);
 
     min2SpinBox = new QDoubleSpinBox;
     min2SpinBox->setRange(-5, 5);
     min2SpinBox->setSingleStep(0.1);
     min2SpinBox->setValue(0.0);
-    min2SpinBox->setReadOnly(true);
+    min2SpinBox->setDisabled(true);
 
     connect(min1SpinBox, SIGNAL(valueChanged(double)),
             this, SLOT(min1Changed()));
@@ -780,10 +905,79 @@ void MainWindow::createToolBox()
     energiesLayout->addWidget(barSpinBox);
     energiesLayout->addWidget(min2SpinBox);
 
+    startModifier = new QComboBox;
+    startModifier->addItem("1");
+    startModifier->addItem("2");
+    startModifier->addItem("3");
+    startModifier->addItem("4");
+    startModifier->setDisabled(true);
+
+    endModifier = new QComboBox;
+    endModifier->addItem("1");
+    endModifier->addItem("2");
+    endModifier->addItem("3");
+    endModifier->addItem("4");
+    endModifier->setDisabled(true);
+
+    startModSpinBox = new QDoubleSpinBox;
+    startModSpinBox->setRange(-5,5);
+    startModSpinBox->setSingleStep(0.1);
+    startModSpinBox->setValue(0.0);
+    startModSpinBox->setDisabled(true);
+
+    endModSpinBox = new QDoubleSpinBox;
+    endModSpinBox->setRange(-5,5);
+    endModSpinBox->setSingleStep(0.1);
+    endModSpinBox->setValue(0.0);
+    endModSpinBox->setDisabled(true);
+
+    startPreFactor = new QDoubleSpinBox;
+    startPreFactor->setRange(0,99);
+    startPreFactor->setSingleStep(1.0);
+    startPreFactor->setValue(0.0);
+    startPreFactor->setDisabled(true);
+
+    endPreFactor = new QDoubleSpinBox;
+    endPreFactor->setRange(0,99);
+    endPreFactor->setSingleStep(1.0);
+    endPreFactor->setValue(0.0);
+    endPreFactor->setDisabled(true);
+
+    connect(startModSpinBox, SIGNAL(valueChanged(double)),
+            this, SLOT(startModChanged()));
+    connect(endModSpinBox, SIGNAL(valueChanged(double)),
+            this, SLOT(endModChanged()));
+    connect(startPreFactor, SIGNAL(valueChanged(double)),
+            this, SLOT(startPreFacChanged()));
+    connect(endPreFactor, SIGNAL(valueChanged(double)),
+            this, SLOT(endPreFacChanged()));
+    connect(startModifier, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(startModCBChanged()));
+    connect(endModifier, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(endModCBChanged()));
+
+    QHBoxLayout *modifierLayout = new QHBoxLayout;
+    modifierLayout->addWidget(startModifier);
+    modifierLayout->addStretch(0);
+    modifierLayout->addWidget(endModifier);
+
+    QHBoxLayout *modEnLayout = new QHBoxLayout;
+    modEnLayout->addWidget(startModSpinBox);
+    modEnLayout->addStretch(0);
+    modEnLayout->addWidget(endModSpinBox);
+
+    QHBoxLayout *prefactorLayout = new QHBoxLayout;
+    prefactorLayout->addWidget(startPreFactor);
+    prefactorLayout->addStretch(0);
+    prefactorLayout->addWidget(endPreFactor);
+
     QVBoxLayout *createBox = new QVBoxLayout;
     createBox->addLayout(sceneButtonLayout);
     createBox->addWidget(curveDisplay);
     createBox->addLayout(energiesLayout);
+    createBox->addLayout(modifierLayout);
+    createBox->addLayout(modEnLayout);
+    createBox->addLayout(prefactorLayout);
     createBox->addStretch(0);
 
     QWidget *itemWidget = new QWidget;
@@ -819,35 +1013,70 @@ void MainWindow::createToolBox()
 
 void MainWindow::createActions()
 {
-    deleteAction = new QAction(QIcon(":/images/delete.png"), tr("&Delete"), this);
+    deleteAction = new QAction(("&Delete"), this);
     deleteAction->setShortcut(tr("Delete"));
-    deleteAction->setStatusTip(tr("Delete item from diagram"));
+    deleteAction->setStatusTip(tr("Delete object from system"));
     connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteItem()));
+
+    clearAction = new QAction(("&Clear"), this);
+    clearAction->setShortcut(tr("Clear"));
+    clearAction->setStatusTip(tr("Clear simulation cell"));
+    connect(clearAction, SIGNAL(triggered()), this, SLOT(clearCell()));
 
     exitAction = new QAction(tr("E&xit"), this);
     exitAction->setShortcuts(QKeySequence::Quit);
-    exitAction->setStatusTip(tr("Quit Scenediagram example"));
+    exitAction->setStatusTip(tr("Quit KMC2D"));
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
+
+    openAction = new QAction(tr("&Open"), this);
+    openAction->setShortcut(tr("Open"));
+    openAction->setStatusTip("Open configuration file");
+    connect(openAction, SIGNAL(triggered()), this, SLOT(openfile()));
+
+    saveAction = new QAction(tr("&Save"), this);
+    saveAction->setShortcut(tr("Save"));
+    saveAction->setStatusTip("Save configuration file");
+    connect(saveAction, SIGNAL(triggered()), this, SLOT(savefile()));
+
+    printAction = new QAction(tr("&Print"), this);
+    printAction->setShortcut(tr("Print"));
+    printAction->setStatusTip(tr("Print the system view"));
+    connect(printAction, SIGNAL(triggered()), this, SLOT(print()));
 
     aboutAction = new QAction(tr("A&bout"), this);
     aboutAction->setShortcut(tr("Ctrl+B"));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
+
+    setOccupied = new QAction(tr("O&ccupied"),this);
+    setOccupied->setShortcut(Qt::Key_O);
+    setOccupied->setStatusTip(tr("Set site as occupied"));
+    connect(setOccupied, SIGNAL(triggered()), this, SLOT(occupied()));
+
+    setUnoccupied = new QAction(tr("&Unoccupied"),this);
+    setUnoccupied->setShortcut(Qt::Key_U);
+    setUnoccupied->setStatusTip(tr("Set site as unoccupied"));
+    connect(setUnoccupied, SIGNAL(triggered()), this, SLOT(unoccupied()));
 }
 
 
 void MainWindow::createMenus()
 {
     fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addAction(openAction);
+    fileMenu->addAction(saveAction);
+    fileMenu->addAction(printAction);
     fileMenu->addAction(exitAction);
 
-    itemMenu = menuBar()->addMenu(tr("&Item"));
+    itemMenu = menuBar()->addMenu(tr("&System"));
     itemMenu->addAction(deleteAction);
+    itemMenu->addAction(clearAction);
 
     aboutMenu = menuBar()->addMenu(tr("&Help"));
     aboutMenu->addAction(aboutAction);
 
     siteMenu = menuBar()->addMenu(tr("&Site"));
-    siteMenu->addAction(aboutAction);
+    siteMenu->addAction(setOccupied);
+    siteMenu->addAction(setUnoccupied);
 
     transMenu = menuBar()->addMenu(tr("&Transition"));
     transMenu->addAction(deleteAction);
@@ -1040,4 +1269,139 @@ void MainWindow::redrawCells()
     pcellc6->setRect(-xcell-40,-ycell-40, xcell+40, ycell+40);
     pcellc7->setRect(-xcell-40,0, xcell+40, ycell);
     pcellc8->setRect(-xcell-40,ycell, xcell+40, ycell+40);
+}
+
+
+//function to open file dialog and read in the XML configuration file
+void MainWindow::openfile()
+{
+    QString inputfile = QFileDialog::getOpenFileName(this, "Open XML File",
+                                                    QString(),
+                                                    "XML Files (*.xml)");
+
+
+    /*
+    if (!inputfile.isNull()) {
+
+
+
+
+        QString line;
+
+        atoms.clear(); //clear configuration arrays
+        xatmpos.clear();
+        yatmpos.clear();
+
+        nitems = 0;
+
+        QFile file(inputfile);
+        if (!file.open(QFile::ReadOnly)) {
+            throw std::bad_exception();
+        }
+        QTextStream input(&file);
+
+        line = input.readLine();
+        bool ok;
+        nitems = line.toInt(&ok,10);
+
+        if(!ok)
+        {
+            QMessageBox msgbox;
+            msgbox.setText("Error reading XYZ file");
+            msgbox.exec();
+            return;
+        }
+
+        line = input.readLine();
+        QStringList cell = line.split(" ",QString::SkipEmptyParts);
+        if(cell.size() == 3)
+        {
+            bounds[0] = 0.0;
+            bounds[1] = 100*cell[0].toFloat(&ok);
+            bounds[2] = 0.0;
+            bounds[3] = 100*cell[1].toFloat(&ok);
+        }
+
+        for(int i = 0; i < nitems; i++)
+        {
+            line = input.readLine();
+            QStringList coords = line.split(" ",QString::SkipEmptyParts);
+            if(coords.size() != 4)
+            {
+                QMessageBox msgbox;
+                msgbox.setText("Error reading XYZ file");
+                msgbox.exec();
+                return;
+            }
+            float xap =  100*coords[1].toFloat(&ok);
+            float yap =  100*coords[2].toFloat(&ok);
+
+            xatmpos.append(xap);
+            yatmpos.append(yap);
+        }
+
+        populateScene(); // re-draw scene with new coordinates
+        gView->setScene(scene);
+    }
+    */
+}
+
+void MainWindow::savefile() //save scene configuration to an xyz file
+{
+    QString savefile = QFileDialog::getSaveFileName(this, "Save coordinates",
+                                                    QString(),
+                                                    "XML Files (*.xml)");
+
+    if (!savefile.isNull()) {
+
+        QFile sfile(savefile);
+        if (sfile.open(QFile::WriteOnly | QFile::Truncate))
+        {
+            QXmlStreamWriter xmlWriter(&sfile);
+            xmlWriter.setAutoFormatting(true);
+            xmlWriter.writeStartDocument();
+            xmlWriter.writeStartElement("KMC2DData");
+            xmlWriter.writeAttribute("version", "v1.0");
+            xmlWriter.writeStartElement("GraphicsItemList");
+            foreach( QGraphicsItem* item, scene->items())
+            {
+                if(item->type() == Site::Type )
+                {
+                    Site *mySite = qgraphicsitem_cast<Site *>(item);
+                    xmlWriter.writeStartElement("Site");
+                    xmlWriter.writeAttribute("xCoord", QString::number(mySite->x()));
+                    xmlWriter.writeAttribute("yCoord", QString::number(mySite->y()));
+                    xmlWriter.writeEndElement();
+                }
+            }
+            xmlWriter.writeEndElement();
+            xmlWriter.writeEndElement();
+            sfile.close();
+        } else
+        {
+            QMessageBox msgbox;
+            msgbox.setText("Error writing XML file");
+            msgbox.exec();
+            return;
+        }
+    } else
+    {
+        QMessageBox msgbox;
+        msgbox.setText("Error writing XML file");
+        msgbox.exec();
+        return;
+    }
+}
+
+
+void MainWindow::print()
+{
+#if !defined(QT_NO_PRINTER) && !defined(QT_NO_PRINTDIALOG)
+    QPrinter printer;
+    QPrintDialog dialog(&printer, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        QPainter painter(&printer);
+        view->render(&painter);
+    }
+#endif
 }

@@ -1,4 +1,5 @@
 QT += widgets
+qtHaveModule(printsupport): QT += printsupport
 
 HEADERS	    =   mainwindow.h \
 		latsite.h \

@@ -416,6 +416,7 @@ bool ConfigScene::isItemChange(int type)
     return false;
 }
 
+//set the scene item physical properties
 void ConfigScene::setTransMin1(double energy)
 {
     int tid;
@@ -477,6 +478,96 @@ void ConfigScene::setTransBar(double energy)
                     if(itransition->id() == tid)
                     {
                         itransition->setEn(energy);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ConfigScene::setStartMod(int nn, double energy)
+{
+    int tid;
+    if (isItemChange(Transition::Type)) {
+        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
+        item->startItem()->setNNMod(nn, energy);
+
+        tid = item->id();
+        //set energy of image boundary transition
+        if(tid > 0) {
+            foreach(QGraphicsItem *titem, this->items()) {
+                if (titem->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(titem);
+                    if(itransition->id() == tid)
+                    {
+                        itransition->startItem()->setNNMod(nn, energy);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ConfigScene::setEndMod(int nn, double energy)
+{
+    int tid;
+    if (isItemChange(Transition::Type)) {
+        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
+        item->endItem()->setNNMod(nn, energy);
+
+        tid = item->id();
+        //set energy of image boundary transition
+        if(tid > 0) {
+            foreach(QGraphicsItem *titem, this->items()) {
+                if (titem->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(titem);
+                    if(itransition->id() == tid)
+                    {
+                        itransition->endItem()->setNNMod(nn, energy);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ConfigScene::setStartPreFac(double pf)
+{
+    int tid;
+    if (isItemChange(Transition::Type)) {
+        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
+        item->setStartPrefac(pf);
+        tid = item->id();
+        //set energy of image boundary transition
+        if(tid > 0) {
+            foreach(QGraphicsItem *item, this->items()) {
+                if (item->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+                    if(itransition->id() == tid)
+                    {
+                        itransition->setStartPrefac(pf);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ConfigScene::setEndPreFac(double pf)
+{
+    int tid;
+    if (isItemChange(Transition::Type)) {
+        Transition *item = qgraphicsitem_cast<Transition *>(selectedItems().first());
+        item->setEndPrefac(pf);
+        tid = item->id();
+        //set energy of image boundary transition
+        if(tid > 0) {
+            foreach(QGraphicsItem *item, this->items()) {
+                if (item->type() == Transition::Type) {
+                    Transition *itransition = qgraphicsitem_cast<Transition *>(item);
+                    if(itransition->id() == tid)
+                    {
+                        itransition->setEndPrefac(pf);
                     }
                 }
             }

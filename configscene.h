@@ -46,6 +46,10 @@ public:
     void setTransMin1(double energy);
     void setTransMin2(double energy);
     void setTransBar(double energy);
+    void setStartMod(int nn, double energy);
+    void setEndMod(int nn, double energy);
+    void setStartPreFac(double pf);
+    void setEndPreFac(double pf);
 
 public slots:
     void setMode(Mode mode);

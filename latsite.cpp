@@ -42,6 +42,9 @@ Site::Site(int stat, int img, QMenu *contextMenu, QGraphicsItem *parent)
     setZValue(-10);
 
     energy = 0.0;
+    for(int nn = 0; nn < 5; nn++) {
+        nnmod[nn] = 0.0;
+    }
 }
 
 void Site::removeTransition(Transition *transition)
@@ -136,6 +139,14 @@ void Site::updateTrans()
             transition->updatePosition();
         }
     }
+}
+
+void Site::setNNMod(double men1, double men2, double men3, double men4)
+{
+    nnmod[1] = men1;
+    nnmod[2] = men2;
+    nnmod[3] = men3;
+    nnmod[4] = men4;
 }
 
 QVariant Site::itemChange(GraphicsItemChange change, const QVariant &value)

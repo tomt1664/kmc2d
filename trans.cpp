@@ -35,6 +35,8 @@ Transition::Transition(QMenu *contextMenu, Site *startItem, Site *endItem, QGrap
     setPen(QPen(Qt::darkGray, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     setZValue(-50);
     m_en = 1.0;
+    m_startprefac = 10.0;
+    m_endprefac = 10.0;
 }
 
 QRectF Transition::boundingRect() const

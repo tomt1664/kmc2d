@@ -50,6 +50,10 @@ public:
     int id() { return m_id; }
     double en() { return m_en; }
     void setEn(double en) { m_en = en; }
+    void setStartPrefac(double pf) { m_startprefac = pf; }
+    double startPrefac() { return m_startprefac; }
+    void setEndPrefac(double pf) { m_endprefac = pf; }
+    double endPrefac() { return m_endprefac; }
 
     void updatePosition();
 
@@ -65,6 +69,8 @@ protected:
 private:
     int m_id;
     double m_en;
+    double m_startprefac;
+    double m_endprefac;
     Site *myStartItem;
     Site *myEndItem;
     QColor myColor;

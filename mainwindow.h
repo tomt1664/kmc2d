@@ -46,7 +46,11 @@ public:
 
 private slots:
     void backgroundButtonGroupClicked(QAbstractButton *button);
+    void openfile();
+    void savefile();
+    void print();
     void deleteItem();
+    void clearCell();
     void sceneGroupClicked(int id);
     void toggleImages(bool on);
     void toggleSnap(bool on);
@@ -54,12 +58,20 @@ private slots:
     void expandSystem();
     void setupMatrix();
     void about();
+    void occupied();
+    void unoccupied();
     void itemSelected(QGraphicsItem *item);
     void itemdeSelected(QGraphicsItem *item);
 
     void min1Changed();
     void min2Changed();
     void barChanged();
+    void startModChanged();
+    void endModChanged();
+    void startPreFacChanged();
+    void endPreFacChanged();
+    void startModCBChanged();
+    void endModCBChanged();
 
 private:
     void createToolBox();
@@ -81,6 +93,12 @@ private:
     QAction *exitAction;
     QAction *addAction;
     QAction *deleteAction;
+    QAction *setOccupied;
+    QAction *setUnoccupied;
+    QAction *printAction;
+    QAction *openAction;
+    QAction *saveAction;
+    QAction *clearAction;
 
     QAction *aboutAction;
 
@@ -111,6 +129,14 @@ private:
     QDoubleSpinBox *barSpinBox;
     QDoubleSpinBox *min1SpinBox;
     QDoubleSpinBox *min2SpinBox;
+
+    QComboBox *startModifier;
+    QComboBox *endModifier;
+    QDoubleSpinBox *startModSpinBox;
+    QDoubleSpinBox *endModSpinBox;
+
+    QDoubleSpinBox *startPreFactor;
+    QDoubleSpinBox *endPreFactor;
 
     int xcell;
     int ycell;
