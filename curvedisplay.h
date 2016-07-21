@@ -14,7 +14,7 @@
 #include <QPen>
 #include <QWidget>
 
-class CurveDisplay : public QWidget
+class CurveDisplay : public QWidget  // QWidget class to draw the selected transition energy surface
 {
     Q_OBJECT
 
@@ -25,9 +25,9 @@ public:
     QSize size() const Q_DECL_OVERRIDE;
 
 public slots:
-    void setMin1(double min1);
-    void setMin2(double min2);
-    void setBar(double bar);
+    void setMin1(double min1);  //set start site minimum
+    void setMin2(double min2);  //set end site minimum
+    void setBar(double bar);  //set the transition point height
     void setMin(double min);
 
 protected:

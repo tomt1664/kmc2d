@@ -31,7 +31,8 @@ ConfigScene::ConfigScene(QMenu *siteMenu, QMenu *transMenu, int xc, int yc, QObj
     snap = false;
 }
 
-void ConfigScene::addSite(bool ostate,double en, double xc, double yc, int sindx, int xrep, int yrep)
+void ConfigScene::addSite(bool ostate,double en, double xc, double yc, int sindx, int xrep, int yrep,
+                          double m1, double m2, double m3, double m4, double m5, double m6)
 {
     Site *item;
     //periodic images
@@ -48,6 +49,7 @@ void ConfigScene::addSite(bool ostate,double en, double xc, double yc, int sindx
     item->setEn(en);
     item->setID(sindx);
     item->setRep(xrep,yrep);
+    item->setNNMod(m1,m2,m3,m4,m5,m6);
     QPointF xper1(0,ycell), xper2(xcell,ycell), xper3(xcell,0), xper4(xcell,-ycell);
     QPointF xper5(0,-ycell), xper6(-xcell,-ycell), xper7(-xcell,0), xper8(-xcell,ycell);
     image1 = new Site(0,1,mySiteMenu);
@@ -58,6 +60,14 @@ void ConfigScene::addSite(bool ostate,double en, double xc, double yc, int sindx
     image6 = new Site(0,6,mySiteMenu);
     image7 = new Site(0,7,mySiteMenu);
     image8 = new Site(0,8,mySiteMenu);
+    image1->setNNMod(m1,m2,m3,m4,m5,m6);
+    image2->setNNMod(m1,m2,m3,m4,m5,m6);
+    image3->setNNMod(m1,m2,m3,m4,m5,m6);
+    image4->setNNMod(m1,m2,m3,m4,m5,m6);
+    image5->setNNMod(m1,m2,m3,m4,m5,m6);
+    image6->setNNMod(m1,m2,m3,m4,m5,m6);
+    image7->setNNMod(m1,m2,m3,m4,m5,m6);
+    image8->setNNMod(m1,m2,m3,m4,m5,m6);
     if(ostate){
         image1->on();
         image2->on();
@@ -121,15 +131,17 @@ void ConfigScene::addSite(bool ostate,double en, double xc, double yc, int sindx
     image8->setPos(xper8);
 }
 
-void ConfigScene::addTrans(Site *myStartItem, Site *myEndItem, double nbar)
+void ConfigScene::addTrans(Site *myStartItem, Site *myEndItem, double nbar, int id, double startPF, double endPF)
 {
     Transition *transition = new Transition(myTransMenu, myStartItem, myEndItem);
     transition->setColor(myLineColor);
     myStartItem->addTransition(transition);
     myEndItem->addTransition(transition);
     transition->setZValue(-1000.0);
-    transition->setID(0);
+    transition->setID(id);
     transition->setEn(nbar);
+    transition->setStartPrefac(startPF);
+    transition->setEndPrefac(endPF);
     connect(transition, SIGNAL(selectedChange(QGraphicsItem*)),
             this, SIGNAL(itemSelected(QGraphicsItem*)));
     connect(transition, SIGNAL(deselectedChange(QGraphicsItem*)),

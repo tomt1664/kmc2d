@@ -34,8 +34,9 @@ public:
     enum Mode { InsertUSite, InsertSite, InsertTrans, MoveItem };
 
     explicit ConfigScene(QMenu *siteMenu, QMenu *transMenu,int xc, int yc, QObject *parent = 0);
-    void addSite(bool ostate, double en, double xc, double yc, int sindx, int xrep, int yrep);
-    void addTrans(Site *myStartItem, Site *myEndItem, double nbar);
+    void addSite(bool ostate, double en, double xc, double yc, int sindx, int xrep, int yrep,
+             double m1, double m2, double m3, double m4, double m5, double m6);
+    void addTrans(Site *myStartItem, Site *myEndItem, double nbar, int id, double startPF, double endPF);
     void addTransPair(Site *myStartItem1, Site *myEndItem1,Site *myStartItem2, Site *myEndItem2, double nbar);
 
     int getGridSize() const { return this->gridSize; }

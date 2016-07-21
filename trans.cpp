@@ -41,7 +41,7 @@ Transition::Transition(QMenu *contextMenu, Site *startItem, Site *endItem, QGrap
 
 QRectF Transition::boundingRect() const
 {
-    qreal extra = (pen().width() + 20) / 2.0;
+    qreal extra = (pen().width() + 50) / 2.0;
 
     return QRectF(line().p1(), QSizeF(line().p2().x() - line().p1().x(),
                                       line().p2().y() - line().p1().y()))
@@ -75,11 +75,21 @@ void Transition::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
     painter->setBrush(myColor);
 
     painter->drawLine(line());
+
+    this->setZValue(-50);
     if (isSelected()) {
         myPen.setColor(QColor(80, 80, 255, 255));
         painter->setBrush(QColor(80, 80, 255, 255));
         painter->setPen(myPen);
         painter->drawLine(line());
+        myPen.setWidth(7);
+        painter->setPen(myPen);
+        painter->drawEllipse(myEndItem->pos(),24,24);
+        painter->setBrush(QColor(255, 255, 255, 255));
+        painter->drawEllipse(myStartItem->pos(),24,24);
+        this->setZValue(1000);
+        myPen.setWidth(10);
+        painter->setPen(myPen);
     }
 }
 

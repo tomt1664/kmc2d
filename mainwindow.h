@@ -48,6 +48,7 @@ private slots:
     void backgroundButtonGroupClicked(QAbstractButton *button);
     void openfile();
     void savefile();
+    void exportSVG();
     void print();
     void deleteItem();
     void clearCell();
@@ -72,6 +73,8 @@ private slots:
     void endPreFacChanged();
     void startModCBChanged();
     void endModCBChanged();
+
+    void closeEvent(QCloseEvent *event);
 
 private:
     void createToolBox();
@@ -99,6 +102,7 @@ private:
     QAction *openAction;
     QAction *saveAction;
     QAction *clearAction;
+    QAction *exportAction;
 
     QAction *aboutAction;
 

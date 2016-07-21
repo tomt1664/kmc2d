@@ -10,5 +10,7 @@
         <file>icons/image.png</file>
         <file>icons/csize.png</file>
         <file>icons/expand.png</file>
+        <file>icons/modify.png</file>
+        <file>icons/prefac.png</file>
     </qresource>
 </RCC>

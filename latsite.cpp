@@ -42,7 +42,7 @@ Site::Site(int stat, int img, QMenu *contextMenu, QGraphicsItem *parent)
     setZValue(-10);
 
     energy = 0.0;
-    for(int nn = 0; nn < 5; nn++) {
+    for(int nn = 0; nn < 7; nn++) {
         nnmod[nn] = 0.0;
     }
 }
@@ -94,7 +94,7 @@ void Site::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     QPen myPen;
     myPen.setColor(Qt::darkGray);
 
-    painter->setPen(QPen(Qt::darkGray, 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setPen(QPen(Qt::darkGray, 7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 
 
     QBrush b = painter->brush();
@@ -141,12 +141,14 @@ void Site::updateTrans()
     }
 }
 
-void Site::setNNMod(double men1, double men2, double men3, double men4)
+void Site::setNNMod(double men1, double men2, double men3, double men4, double men5, double men6)
 {
     nnmod[1] = men1;
     nnmod[2] = men2;
     nnmod[3] = men3;
     nnmod[4] = men4;
+    nnmod[5] = men5;
+    nnmod[6] = men6;
 }
 
 QVariant Site::itemChange(GraphicsItemChange change, const QVariant &value)

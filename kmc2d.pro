@@ -1,4 +1,4 @@
-QT += widgets
+QT += widgets svg
 qtHaveModule(printsupport): QT += printsupport
 
 HEADERS	    =   mainwindow.h \

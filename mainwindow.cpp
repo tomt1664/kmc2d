@@ -25,6 +25,9 @@
 #include <QFile>
 #include <QXmlStreamWriter>
 #include <QXmlStreamReader>
+#include <QCloseEvent>
+#include <QSvgGenerator>
+#include <QPainter>
 
 MainWindow::MainWindow()
 {
@@ -40,7 +43,7 @@ MainWindow::MainWindow()
     scene->setSceneRect(QRectF(0, 0, xcell, ycell));
     scene->setBackgroundBrush(Qt::lightGray);
 
-    //connect to configscene
+    //connect to configscene for selection/deselection signals
     connect(scene, SIGNAL(itemSelected(QGraphicsItem*)),
                 this, SLOT(itemSelected(QGraphicsItem*)));
     connect(scene, SIGNAL(itemdeSelected(QGraphicsItem*)),
@@ -68,7 +71,7 @@ MainWindow::MainWindow()
     zoomSlider = new QSlider;
     zoomSlider->setMinimum(0);
     zoomSlider->setMaximum(500);
-    zoomSlider->setValue(250);
+    zoomSlider->setValue(200);
 
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(toolBox);
@@ -154,6 +157,25 @@ void MainWindow::deleteItem()
              delete item;
          }
     }
+
+    barSpinBox->setValue(0.0);
+    min1SpinBox->setValue(0.0);
+    min2SpinBox->setValue(0.0);
+    startModSpinBox->setValue(0.0);
+    endModSpinBox->setValue(0.0);
+    startPreFactor->setValue(0.0);
+    endPreFactor->setValue(0.0);
+    startModifier->setCurrentIndex(0);
+    endModifier->setCurrentIndex(0);
+    barSpinBox->setDisabled(true);
+    min1SpinBox->setDisabled(true);
+    min2SpinBox->setDisabled(true);
+    startModifier->setDisabled(true);
+    endModifier->setDisabled(true);
+    startModSpinBox->setDisabled(true);
+    endModSpinBox->setDisabled(true);
+    startPreFactor->setDisabled(true);
+    endPreFactor->setDisabled(true);
 }
 
 //delete all items in the simulation cell (and images)
@@ -175,6 +197,24 @@ void MainWindow::clearCell()
             delete item;
         }
     }
+    barSpinBox->setValue(0.0);
+    min1SpinBox->setValue(0.0);
+    min2SpinBox->setValue(0.0);
+    startModSpinBox->setValue(0.0);
+    endModSpinBox->setValue(0.0);
+    startPreFactor->setValue(0.0);
+    endPreFactor->setValue(0.0);
+    startModifier->setCurrentIndex(0);
+    endModifier->setCurrentIndex(0);
+    barSpinBox->setDisabled(true);
+    min1SpinBox->setDisabled(true);
+    min2SpinBox->setDisabled(true);
+    startModifier->setDisabled(true);
+    endModifier->setDisabled(true);
+    startModSpinBox->setDisabled(true);
+    endModSpinBox->setDisabled(true);
+    startPreFactor->setDisabled(true);
+    endPreFactor->setDisabled(true);
 }
 
 void MainWindow::sceneGroupClicked(int)
@@ -382,7 +422,13 @@ void MainWindow::expandSystem()
                              double yadd = item->y() + j*ycellOld;
                              int nsite = qgraphicsitem_cast<Site *>(item)->stat();
                              double nen = qgraphicsitem_cast<Site *>(item)->en();
-                             scene->addSite(nsite,nen,xadd,yadd,indx,i,j);
+                             double m1 = qgraphicsitem_cast<Site *>(item)->nnMod(1);
+                             double m2 = qgraphicsitem_cast<Site *>(item)->nnMod(2);
+                             double m3 = qgraphicsitem_cast<Site *>(item)->nnMod(3);
+                             double m4 = qgraphicsitem_cast<Site *>(item)->nnMod(4);
+                             double m5 = qgraphicsitem_cast<Site *>(item)->nnMod(5);
+                             double m6 = qgraphicsitem_cast<Site *>(item)->nnMod(6);
+                             scene->addSite(nsite,nen,xadd,yadd,indx,i,j,m1,m2,m3,m4,m5,m6);
                          }
                      }
                  }
@@ -421,7 +467,9 @@ void MainWindow::expandSystem()
                                 }
                             }
                             double nbar = itransition->en();
-                            scene->addTrans(myStartItem,myEndItem,nbar);
+                            double startPF = itransition->startPrefac();
+                            double endPF = itransition->endPrefac();
+                            scene->addTrans(myStartItem,myEndItem,nbar,0,startPF,endPF);
                         }
                     }
                 }
@@ -511,7 +559,9 @@ void MainWindow::expandSystem()
                         }
                     }
                     nbar = itransition->en();
-                    scene->addTrans(myStartItem1,myEndItem1,nbar);
+                    double startPF = itransition->startPrefac();
+                    double endPF = itransition->endPrefac();
+                    scene->addTrans(myStartItem1,myEndItem1,nbar,0,startPF,endPF);
                 }
             }
         }
@@ -584,7 +634,9 @@ void MainWindow::expandSystem()
                         }
                     }
                     nbar = itransition->en();
-                    scene->addTrans(myStartItem1,myEndItem1,nbar);
+                    double startPF = itransition->startPrefac();
+                    double endPF = itransition->endPrefac();
+                    scene->addTrans(myStartItem1,myEndItem1,nbar,0,startPF,endPF);
                 }
             }
         }
@@ -862,6 +914,8 @@ void MainWindow::createToolBox()
     expandButton->setIconSize(QSize(32, 32));
     expandButton->setToolTip("Expand system");
 
+    sceneButtonLayout->setVerticalSpacing(12);
+
     sceneButtonLayout->addWidget(imageButton, 1, 0);
     sceneButtonLayout->addWidget(snapButton, 1, 1);
     sceneButtonLayout->addWidget(cellSizeButton, 1, 2);
@@ -879,18 +933,21 @@ void MainWindow::createToolBox()
     min1SpinBox->setRange(-5, 5);
     min1SpinBox->setSingleStep(0.1);
     min1SpinBox->setValue(0.0);
+    min1SpinBox->setToolTip("Start state energy (eV)");
     min1SpinBox->setDisabled(true);
 
     barSpinBox = new QDoubleSpinBox;
     barSpinBox->setRange(-5, 9);
     barSpinBox->setSingleStep(0.1);
     barSpinBox->setValue(0.0);
+    barSpinBox->setToolTip("Transition point energy (eV)");
     barSpinBox->setDisabled(true);
 
     min2SpinBox = new QDoubleSpinBox;
     min2SpinBox->setRange(-5, 5);
     min2SpinBox->setSingleStep(0.1);
     min2SpinBox->setValue(0.0);
+    min2SpinBox->setToolTip("End state energy (eV)");
     min2SpinBox->setDisabled(true);
 
     connect(min1SpinBox, SIGNAL(valueChanged(double)),
@@ -910,6 +967,9 @@ void MainWindow::createToolBox()
     startModifier->addItem("2");
     startModifier->addItem("3");
     startModifier->addItem("4");
+    startModifier->addItem("5");
+    startModifier->addItem("6");
+    startModifier->setToolTip("Coordination number");
     startModifier->setDisabled(true);
 
     endModifier = new QComboBox;
@@ -917,30 +977,37 @@ void MainWindow::createToolBox()
     endModifier->addItem("2");
     endModifier->addItem("3");
     endModifier->addItem("4");
+    endModifier->addItem("5");
+    endModifier->addItem("6");
+    endModifier->setToolTip("Coordination number");
     endModifier->setDisabled(true);
 
     startModSpinBox = new QDoubleSpinBox;
     startModSpinBox->setRange(-5,5);
     startModSpinBox->setSingleStep(0.1);
     startModSpinBox->setValue(0.0);
+    startModSpinBox->setToolTip("Start state modifier (eV)");
     startModSpinBox->setDisabled(true);
 
     endModSpinBox = new QDoubleSpinBox;
     endModSpinBox->setRange(-5,5);
     endModSpinBox->setSingleStep(0.1);
     endModSpinBox->setValue(0.0);
+    endModSpinBox->setToolTip("End state modifier (eV)");
     endModSpinBox->setDisabled(true);
 
     startPreFactor = new QDoubleSpinBox;
     startPreFactor->setRange(0,99);
     startPreFactor->setSingleStep(1.0);
     startPreFactor->setValue(0.0);
+    startPreFactor->setToolTip("Forward prefactor (THz)");
     startPreFactor->setDisabled(true);
 
     endPreFactor = new QDoubleSpinBox;
     endPreFactor->setRange(0,99);
     endPreFactor->setSingleStep(1.0);
     endPreFactor->setValue(0.0);
+    endPreFactor->setToolTip("Backward prefactor (THz)");
     endPreFactor->setDisabled(true);
 
     connect(startModSpinBox, SIGNAL(valueChanged(double)),
@@ -957,7 +1024,12 @@ void MainWindow::createToolBox()
             this, SLOT(endModCBChanged()));
 
     QHBoxLayout *modifierLayout = new QHBoxLayout;
+    QLabel *modimage = new QLabel();
+    modimage->setPixmap(QPixmap(":/icons/modify.png"));
+    modimage->setToolTip("Coordination modifier");
     modifierLayout->addWidget(startModifier);
+    modifierLayout->addStretch(0);
+    modifierLayout->addWidget(modimage);
     modifierLayout->addStretch(0);
     modifierLayout->addWidget(endModifier);
 
@@ -967,8 +1039,11 @@ void MainWindow::createToolBox()
     modEnLayout->addWidget(endModSpinBox);
 
     QHBoxLayout *prefactorLayout = new QHBoxLayout;
+    QLabel *pfimage = new QLabel();
+    pfimage->setPixmap(QPixmap(":/icons/prefac.png"));
+    pfimage->setToolTip("Rate prefactor (THz)");
     prefactorLayout->addWidget(startPreFactor);
-    prefactorLayout->addStretch(0);
+    prefactorLayout->addWidget(pfimage);
     prefactorLayout->addWidget(endPreFactor);
 
     QVBoxLayout *createBox = new QVBoxLayout;
@@ -1014,12 +1089,12 @@ void MainWindow::createToolBox()
 void MainWindow::createActions()
 {
     deleteAction = new QAction(("&Delete"), this);
-    deleteAction->setShortcut(tr("Delete"));
+    deleteAction->setShortcut(QKeySequence::Delete);
     deleteAction->setStatusTip(tr("Delete object from system"));
     connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteItem()));
 
     clearAction = new QAction(("&Clear"), this);
-    clearAction->setShortcut(tr("Clear"));
+    clearAction->setShortcut(QKeySequence::Cut);
     clearAction->setStatusTip(tr("Clear simulation cell"));
     connect(clearAction, SIGNAL(triggered()), this, SLOT(clearCell()));
 
@@ -1029,22 +1104,27 @@ void MainWindow::createActions()
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 
     openAction = new QAction(tr("&Open"), this);
-    openAction->setShortcut(tr("Open"));
+    openAction->setShortcut(QKeySequence::Open);
     openAction->setStatusTip("Open configuration file");
     connect(openAction, SIGNAL(triggered()), this, SLOT(openfile()));
 
     saveAction = new QAction(tr("&Save"), this);
-    saveAction->setShortcut(tr("Save"));
+    saveAction->setShortcut(QKeySequence::Save);
     saveAction->setStatusTip("Save configuration file");
     connect(saveAction, SIGNAL(triggered()), this, SLOT(savefile()));
 
+    exportAction = new QAction(tr("&Export"), this);
+    exportAction->setShortcut(Qt::CTRL + Qt::Key_E);
+    exportAction->setStatusTip("Export system as SVG");
+    connect(exportAction, SIGNAL(triggered()), this, SLOT(exportSVG()));
+
     printAction = new QAction(tr("&Print"), this);
-    printAction->setShortcut(tr("Print"));
+    printAction->setShortcut(QKeySequence::Print);
     printAction->setStatusTip(tr("Print the system view"));
     connect(printAction, SIGNAL(triggered()), this, SLOT(print()));
 
     aboutAction = new QAction(tr("A&bout"), this);
-    aboutAction->setShortcut(tr("Ctrl+B"));
+    aboutAction->setShortcut(Qt::CTRL + Qt::Key_A);
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
 
     setOccupied = new QAction(tr("O&ccupied"),this);
@@ -1064,6 +1144,7 @@ void MainWindow::createMenus()
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAction);
     fileMenu->addAction(saveAction);
+    fileMenu->addAction(exportAction);
     fileMenu->addAction(printAction);
     fileMenu->addAction(exitAction);
 
@@ -1279,71 +1360,185 @@ void MainWindow::openfile()
                                                     QString(),
                                                     "XML Files (*.xml)");
 
-
-    /*
     if (!inputfile.isNull()) {
 
-
-
-
-        QString line;
-
-        atoms.clear(); //clear configuration arrays
-        xatmpos.clear();
-        yatmpos.clear();
-
-        nitems = 0;
+        clearCell();
 
         QFile file(inputfile);
-        if (!file.open(QFile::ReadOnly)) {
-            throw std::bad_exception();
-        }
-        QTextStream input(&file);
 
-        line = input.readLine();
-        bool ok;
-        nitems = line.toInt(&ok,10);
-
-        if(!ok)
-        {
+        if (!file.open(QFile::ReadOnly | QFile::Text)) {
             QMessageBox msgbox;
-            msgbox.setText("Error reading XYZ file");
+            msgbox.setText("Error reading XML file");
             msgbox.exec();
             return;
         }
 
-        line = input.readLine();
-        QStringList cell = line.split(" ",QString::SkipEmptyParts);
-        if(cell.size() == 3)
-        {
-            bounds[0] = 0.0;
-            bounds[1] = 100*cell[0].toFloat(&ok);
-            bounds[2] = 0.0;
-            bounds[3] = 100*cell[1].toFloat(&ok);
-        }
+        QXmlStreamReader xmlReader(&file);
 
-        for(int i = 0; i < nitems; i++)
-        {
-            line = input.readLine();
-            QStringList coords = line.split(" ",QString::SkipEmptyParts);
-            if(coords.size() != 4)
-            {
-                QMessageBox msgbox;
-                msgbox.setText("Error reading XYZ file");
-                msgbox.exec();
-                return;
+
+
+        xmlReader.readNext();
+
+
+        while(!xmlReader.atEnd()) {
+            xmlReader.readNext();
+            if(xmlReader.isStartElement()) {
+                QString name = xmlReader.name().toString();
+                qDebug() << name;
+                if(name == "Cell") {
+                    qDebug() << "Cell element";
+                    QXmlStreamAttributes attributes = xmlReader.attributes();
+                    foreach(QXmlStreamAttribute attribute, attributes) {
+                        QString aname = attribute.name().toString();
+                        QString avalue = attribute.value().toString();
+                        if(aname == "xDim") {
+                            qDebug() << "x dimension " << avalue;
+                            xcell = avalue.toInt();
+                        }
+                        if(aname == "yDim") {
+                            qDebug() << "y dimension " << avalue;
+                            ycell = avalue.toInt();
+                        }
+                    }
+                    //re-draw the system cell
+                    scene->changeCell(xcell,ycell);
+                    scene->setSceneRect(QRectF(0, 0, xcell, ycell));
+                    cell->setRect(0, 0, xcell, ycell);
+                    perarea->setRect(-xcell-10, -ycell-10, 3*xcell+20, 3*ycell+20);
+                    redrawCells();
+                }
+                if(name == "Site") {
+                    qDebug() << "Site element";
+                    QXmlStreamAttributes attributes = xmlReader.attributes();
+                    int xcrd,ycrd,occt;
+                    double ent,m1,m2,m3,m4,m5,m6 = 0.0;
+                    int sum = 0;
+                    foreach(QXmlStreamAttribute attribute, attributes) {
+                        QString aname = attribute.name().toString();
+                        QString avalue = attribute.value().toString();
+                        if(aname == "xCoord") {
+                            qDebug() << "x dimension = " << avalue;
+                            xcrd = avalue.toInt();
+                            sum++;
+                        }
+                        if(aname == "yCoord") {
+                            qDebug() << "y dimension = " << avalue;
+                            ycrd = avalue.toInt();
+                            sum++;
+                        }
+                        if(aname == "Occ") {
+                            qDebug() << "occupation = " << avalue;
+                            occt = avalue.toInt();
+                            sum++;
+                        }
+                        if(aname == "En") {
+                            qDebug() << "energy = " << avalue;
+                            ent = avalue.toDouble();
+                            sum++;
+                        }
+                        if(aname == "Mod1") m1 = avalue.toDouble();
+                        if(aname == "Mod2") m2 = avalue.toDouble();
+                        if(aname == "Mod3") m3 = avalue.toDouble();
+                        if(aname == "Mod4") m4 = avalue.toDouble();
+                        if(aname == "Mod5") m5 = avalue.toDouble();
+                        if(aname == "Mod6") m6 = avalue.toDouble();
+                        }
+                        if(sum != 4) {
+                            QMessageBox msgbox;
+                            msgbox.setText("Error. Malformed system file: Site attributes missing");
+                            msgbox.exec();
+                            return;
+                    }
+                    scene->addSite(occt,ent,xcrd,ycrd,0,0,0,m1,m2,m3,m4,m5,m6);
+                }
+                if(name == "Transition") {
+                    qDebug() << "Transition element";
+                    QXmlStreamAttributes attributes = xmlReader.attributes();
+                    int sxcrd,sycrd,excrd,eycrd,idt;
+                    double ent,fpf,bpf;
+                    int sum = 0;
+                    foreach(QXmlStreamAttribute attribute, attributes) {
+                        QString aname = attribute.name().toString();
+                        QString avalue = attribute.value().toString();
+                        if(aname == "xStart") {
+                            qDebug() << "x start = " << avalue;
+                            sxcrd = avalue.toInt();
+                            sum++;
+                        }
+                        if(aname == "yStart") {
+                            qDebug() << "y dimension = " << avalue;
+                            sycrd = avalue.toInt();
+                            sum++;
+                        }
+                        if(aname == "xEnd") {
+                            qDebug() << "x end = " << avalue;
+                            excrd = avalue.toInt();
+                            sum++;
+                        }
+                        if(aname == "yEnd") {
+                            qDebug() << "y end = " << avalue;
+                            eycrd = avalue.toInt();
+                            sum++;
+                        }
+                        if(aname == "En") {
+                            qDebug() << "energy = " << avalue;
+                            ent = avalue.toDouble();
+                            qDebug() << "energyd = " << ent;
+                            sum++;
+                        }
+                        if(aname == "startPF") {
+                            qDebug() << "spf = " << avalue;
+                            fpf = avalue.toDouble();
+                            sum++;
+                        }
+                        if(aname == "endPF") {
+                            qDebug() << "epf = " << avalue;
+                            bpf = avalue.toDouble();
+                            sum++;
+                        }
+                        if(aname == "ID") {
+                            qDebug() << "id = " << avalue;
+                            idt = avalue.toInt();
+                            sum++;
+                        }
+                    }
+                    if(sum != 8) {
+                        QMessageBox msgbox;
+                        msgbox.setText("Error. Malformed system file: Trans attributes missing");
+                        msgbox.exec();
+                        return;
+                    }
+                    Site *startItem;
+                    Site *endItem;
+                    bool foundStart = false;
+                    bool foundEnd = false;
+                    foreach(QGraphicsItem *item, scene->items()) {
+                        if(item->type() == Site::Type ) {
+                            Site *sItem = qgraphicsitem_cast<Site *>(item);
+                            int xsp = sItem->scenePos().x();
+                            int ysp = sItem->scenePos().y();
+                            if(xsp == sxcrd && ysp == sycrd) {
+                                startItem = sItem;
+                                foundStart = true;
+                            }
+                            if(xsp == excrd && ysp == eycrd) {
+                                foundEnd = true;
+                                endItem = sItem;
+                            }
+                        }
+                    }
+                    if(!foundStart || !foundEnd) {
+                        QMessageBox msgbox;
+                        msgbox.setText("Error. Malformed system file: hanging transition");
+                        msgbox.exec();
+                        return;
+                    }
+                    scene->addTrans(startItem,endItem,ent,idt,fpf,bpf);
+                }
             }
-            float xap =  100*coords[1].toFloat(&ok);
-            float yap =  100*coords[2].toFloat(&ok);
-
-            xatmpos.append(xap);
-            yatmpos.append(yap);
         }
 
-        populateScene(); // re-draw scene with new coordinates
-        gView->setScene(scene);
     }
-    */
 }
 
 void MainWindow::savefile() //save scene configuration to an xyz file
@@ -1362,15 +1557,54 @@ void MainWindow::savefile() //save scene configuration to an xyz file
             xmlWriter.writeStartDocument();
             xmlWriter.writeStartElement("KMC2DData");
             xmlWriter.writeAttribute("version", "v1.0");
-            xmlWriter.writeStartElement("GraphicsItemList");
+            xmlWriter.writeStartElement("Cell");
+            xmlWriter.writeAttribute("xDim", QString::number(xcell));
+            xmlWriter.writeAttribute("yDim", QString::number(ycell));
+            xmlWriter.writeEndElement();
+            xmlWriter.writeStartElement("ItemList");
             foreach( QGraphicsItem* item, scene->items())
             {
                 if(item->type() == Site::Type )
                 {
-                    Site *mySite = qgraphicsitem_cast<Site *>(item);
-                    xmlWriter.writeStartElement("Site");
-                    xmlWriter.writeAttribute("xCoord", QString::number(mySite->x()));
-                    xmlWriter.writeAttribute("yCoord", QString::number(mySite->y()));
+                    if(item->childItems().size() > 0) {
+                        Site *mySite = qgraphicsitem_cast<Site *>(item);
+                        xmlWriter.writeStartElement("Site");
+                        xmlWriter.writeAttribute("xCoord", QString::number(mySite->x()));
+                        xmlWriter.writeAttribute("yCoord", QString::number(mySite->y()));
+                        xmlWriter.writeAttribute("Occ", QString::number(mySite->stat()));
+                        xmlWriter.writeAttribute("En", QString::number(mySite->en()));
+                        xmlWriter.writeAttribute("Mod1", QString::number(mySite->nnMod(1)));
+                        xmlWriter.writeAttribute("Mod2", QString::number(mySite->nnMod(2)));
+                        xmlWriter.writeAttribute("Mod3", QString::number(mySite->nnMod(3)));
+                        xmlWriter.writeAttribute("Mod4", QString::number(mySite->nnMod(4)));
+                        xmlWriter.writeAttribute("Mod5", QString::number(mySite->nnMod(5)));
+                        xmlWriter.writeAttribute("Mod6", QString::number(mySite->nnMod(6)));
+                        foreach(QGraphicsItem* child, item->childItems()) {
+                            Site *myChild = qgraphicsitem_cast<Site *>(child);
+                            xmlWriter.writeStartElement("Image");
+                            xmlWriter.writeAttribute("xCoord", QString::number(myChild->scenePos().x()));
+                            xmlWriter.writeAttribute("yCoord", QString::number(myChild->scenePos().y()));
+                            xmlWriter.writeAttribute("ImgNo", QString::number(myChild->img()));
+                            xmlWriter.writeEndElement();
+                        }
+                        xmlWriter.writeEndElement();
+                    }
+                }
+            }
+            foreach( QGraphicsItem* item, scene->items())
+            {
+                if(item->type() == Transition::Type )
+                {
+                    Transition *transition = qgraphicsitem_cast<Transition *>(item);
+                    xmlWriter.writeStartElement("Transition");
+                    xmlWriter.writeAttribute("xStart", QString::number(transition->startItem()->scenePos().x()));
+                    xmlWriter.writeAttribute("yStart", QString::number(transition->startItem()->scenePos().y()));
+                    xmlWriter.writeAttribute("xEnd", QString::number(transition->endItem()->scenePos().x()));
+                    xmlWriter.writeAttribute("yEnd", QString::number(transition->endItem()->scenePos().y()));
+                    xmlWriter.writeAttribute("En", QString::number(transition->en()));
+                    xmlWriter.writeAttribute("startPF", QString::number(transition->startPrefac()));
+                    xmlWriter.writeAttribute("endPF", QString::number(transition->endPrefac()));
+                    xmlWriter.writeAttribute("ID", QString::number(transition->id()));
                     xmlWriter.writeEndElement();
                 }
             }
@@ -1404,4 +1638,42 @@ void MainWindow::print()
         view->render(&painter);
     }
 #endif
+}
+
+//ask to save on exit
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    QMessageBox::StandardButton resBtn = QMessageBox::question( this, "Quit KMC2D",
+                                                                tr("Save system configuration?\n"),
+                                                                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+                                                                QMessageBox::Yes);
+    if(resBtn == QMessageBox::Cancel) {
+        event->ignore();
+    } else if(resBtn == QMessageBox::Yes) {
+        savefile();
+        event->accept();
+    } else if(resBtn == QMessageBox::No) {
+        event->accept();
+    }
+}
+
+//expot qgraphicsscene as an SVG file
+void MainWindow::exportSVG()
+{
+    QString exportfile = QFileDialog::getSaveFileName(this, tr("Export as SVG"),
+        QString(), tr("SVG files (*.svg)"));
+
+    if (!exportfile.isNull()) {
+
+    QSvgGenerator *svggenerator = new QSvgGenerator();
+    svggenerator->setFileName(exportfile);
+    svggenerator->setSize(QSize(xcell*3, ycell*3));
+    svggenerator->setViewBox(QRect(-xcell, -ycell, xcell*3, ycell*3));
+    svggenerator->setTitle(tr("KMC2D Exported Scene"));
+
+    QPainter *svgpainter = new QPainter(svggenerator);
+    svgpainter->begin(svggenerator);
+    scene->render(svgpainter);
+    svgpainter->end();
+    }
 }
