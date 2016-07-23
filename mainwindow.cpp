@@ -90,27 +90,6 @@ MainWindow::MainWindow()
     setWindowTitle(tr("KMC2D"));
 }
 
-void MainWindow::backgroundButtonGroupClicked(QAbstractButton *button)
-{
-    QList<QAbstractButton *> buttons = backgroundButtonGroup->buttons();
-    foreach (QAbstractButton *myButton, buttons) {
-        if (myButton != button)
-            button->setChecked(false);
-    }
-    QString text = button->text();
-    if (text == tr("Blue Grid"))
-        scene->setBackgroundBrush(QPixmap(":/images/background1.png"));
-    else if (text == tr("White Grid"))
-        scene->setBackgroundBrush(QPixmap(":/images/background2.png"));
-    else if (text == tr("Gray Grid"))
-        scene->setBackgroundBrush(QPixmap(":/images/background3.png"));
-    else
-        scene->setBackgroundBrush(QPixmap(":/images/background4.png"));
-
-    scene->update();
-    view->update();
-}
-
 //delete item
 void MainWindow::deleteItem()
 {
@@ -687,6 +666,8 @@ void MainWindow::itemSelected(QGraphicsItem *item)
     endModSpinBox->setDisabled(false);
     startPreFactor->setDisabled(false);
     endPreFactor->setDisabled(false);
+    modimage->setDisabled(false);
+    pfimage->setDisabled(false);
 
     double startpf = transition->startPrefac();
     double endpf = transition->endPrefac();
@@ -717,8 +698,10 @@ void MainWindow::itemdeSelected(QGraphicsItem *item)
     endModifier->setDisabled(true);
     startModSpinBox->setDisabled(true);
     endModSpinBox->setDisabled(true);
+    modimage->setDisabled(true);
     startPreFactor->setDisabled(true);
     endPreFactor->setDisabled(true);
+    pfimage->setDisabled(true);
 }
 
 //update the graph view and site properties on spinbox change
@@ -849,31 +832,36 @@ void MainWindow::createToolBox()
 
     addUsiteButton = new QToolButton;
     addUsiteButton->setIcon(QIcon(QPixmap(":/icons/uosite.png")));
-    addUsiteButton->setIconSize(QSize(32, 32));
+    addUsiteButton->setIconSize(QSize(24, 24));
     addUsiteButton->setCheckable(true);
     addUsiteButton->setChecked(true);
     addUsiteButton->setToolTip("Add unoccupied site");
 
     addSiteButton = new QToolButton;
     addSiteButton->setIcon(QIcon(QPixmap(":/icons/osite.png")));
-    addSiteButton->setIconSize(QSize(32, 32));
+    addSiteButton->setIconSize(QSize(24, 24));
     addSiteButton->setCheckable(true);
     addSiteButton->setChecked(false);
     addSiteButton->setToolTip("Add occupied site");
 
     addTransButton = new QToolButton;
     addTransButton->setIcon(QIcon(QPixmap(":/icons/trans.png")));
-    addTransButton->setIconSize(QSize(32, 32));
+    addTransButton->setIconSize(QSize(24, 24));
     addTransButton->setCheckable(true);
     addTransButton->setChecked(false);
     addTransButton->setToolTip("Add transition");
 
     selectButton = new QToolButton;
     selectButton->setIcon(QIcon(QPixmap(":/icons/point.png")));
-    selectButton->setIconSize(QSize(32, 32));
+    selectButton->setIconSize(QSize(24, 24));
     selectButton->setCheckable(true);
     selectButton->setChecked(false);
     selectButton->setToolTip("Select item");
+
+    deleteButton = new QToolButton;
+    deleteButton->setIcon(QIcon(QPixmap(":/icons/delete.png")));
+    deleteButton->setIconSize(QSize(24, 24));
+    deleteButton->setToolTip("Delete Item");
 
     sceneGroup = new QButtonGroup;
     sceneGroup->setExclusive(true);
@@ -886,46 +874,54 @@ void MainWindow::createToolBox()
     sceneButtonLayout->addWidget(addSiteButton, 0, 1);
     sceneButtonLayout->addWidget(addTransButton, 0, 2);
     sceneButtonLayout->addWidget(selectButton, 0, 3);
+    sceneButtonLayout->addWidget(deleteButton, 0, 4);
 
     connect(sceneGroup, SIGNAL(buttonClicked(int)),
             this, SLOT(sceneGroupClicked(int)));
 
     imageButton = new QToolButton;
     imageButton->setIcon(QIcon(QPixmap(":/icons/image.png")));
-    imageButton->setIconSize(QSize(32, 32));
+    imageButton->setIconSize(QSize(24, 24));
     imageButton->setCheckable(true);
     imageButton->setChecked(false);
     imageButton->setToolTip("Display periodic images");
 
     snapButton = new QToolButton;
     snapButton->setIcon(QIcon(QPixmap(":/icons/snap.png")));
-    snapButton->setIconSize(QSize(32, 32));
+    snapButton->setIconSize(QSize(24, 24));
     snapButton->setCheckable(true);
     snapButton->setChecked(false);
     snapButton->setToolTip("Snap to grid");
 
     cellSizeButton = new QToolButton;
     cellSizeButton->setIcon(QIcon(QPixmap(":/icons/csize.png")));
-    cellSizeButton->setIconSize(QSize(32, 32));
+    cellSizeButton->setIconSize(QSize(24, 24));
     cellSizeButton->setToolTip("Set cell dimensions");
 
     expandButton = new QToolButton;
     expandButton->setIcon(QIcon(QPixmap(":/icons/expand.png")));
-    expandButton->setIconSize(QSize(32, 32));
+    expandButton->setIconSize(QSize(24, 24));
     expandButton->setToolTip("Expand system");
 
-    sceneButtonLayout->setVerticalSpacing(12);
+    colorPES = new QToolButton;
+    colorPES->setIcon(QIcon(QPixmap(":/icons/color.png")));
+    colorPES->setIconSize(QSize(24, 24));
+    colorPES->setToolTip("Colour bonds to energy");
+
+    sceneButtonLayout->setVerticalSpacing(6);
 
     sceneButtonLayout->addWidget(imageButton, 1, 0);
     sceneButtonLayout->addWidget(snapButton, 1, 1);
     sceneButtonLayout->addWidget(cellSizeButton, 1, 2);
     sceneButtonLayout->addWidget(expandButton, 1, 3);
+    sceneButtonLayout->addWidget(colorPES, 1, 4);
 
     connect(imageButton, SIGNAL(toggled(bool)),
             this, SLOT(toggleImages(bool)));
     connect(snapButton, SIGNAL(toggled(bool)),this,SLOT(toggleSnap(bool)));
     connect(cellSizeButton, SIGNAL(clicked()),this,SLOT(changeCellSize()));
     connect(expandButton, SIGNAL(clicked()),this,SLOT(expandSystem()));
+    connect(deleteButton, SIGNAL(clicked()),this,SLOT(deleteItem()));
 
     curveDisplay = new CurveDisplay;
 
@@ -1024,66 +1020,151 @@ void MainWindow::createToolBox()
             this, SLOT(endModCBChanged()));
 
     QHBoxLayout *modifierLayout = new QHBoxLayout;
-    QLabel *modimage = new QLabel();
+    modimage = new QLabel();
     modimage->setPixmap(QPixmap(":/icons/modify.png"));
     modimage->setToolTip("Coordination modifier");
-    modifierLayout->addWidget(startModifier);
+    modimage->setDisabled(true);
+
+
+    QVBoxLayout *startModEnLayout = new QVBoxLayout;
+    startModEnLayout->addWidget(startModifier);
+    startModEnLayout->addWidget(startModSpinBox);
+
+    QVBoxLayout *endModEnLayout = new QVBoxLayout;
+    endModEnLayout->addWidget(endModifier);
+    endModEnLayout->addWidget(endModSpinBox);
+
+    modifierLayout->addLayout(startModEnLayout);
     modifierLayout->addStretch(0);
     modifierLayout->addWidget(modimage);
     modifierLayout->addStretch(0);
-    modifierLayout->addWidget(endModifier);
-
-    QHBoxLayout *modEnLayout = new QHBoxLayout;
-    modEnLayout->addWidget(startModSpinBox);
-    modEnLayout->addStretch(0);
-    modEnLayout->addWidget(endModSpinBox);
+    modifierLayout->addLayout(endModEnLayout);
 
     QHBoxLayout *prefactorLayout = new QHBoxLayout;
-    QLabel *pfimage = new QLabel();
+    pfimage = new QLabel();
     pfimage->setPixmap(QPixmap(":/icons/prefac.png"));
     pfimage->setToolTip("Rate prefactor (THz)");
+    pfimage->setDisabled(true);
     prefactorLayout->addWidget(startPreFactor);
+    prefactorLayout->addStretch(0);
     prefactorLayout->addWidget(pfimage);
+    prefactorLayout->addStretch(0);
     prefactorLayout->addWidget(endPreFactor);
 
     QVBoxLayout *createBox = new QVBoxLayout;
     createBox->addLayout(sceneButtonLayout);
     createBox->addWidget(curveDisplay);
     createBox->addLayout(energiesLayout);
+    createBox->addSpacing(25);
     createBox->addLayout(modifierLayout);
-    createBox->addLayout(modEnLayout);
+    createBox->addSpacing(25);
     createBox->addLayout(prefactorLayout);
     createBox->addStretch(0);
 
-    QWidget *itemWidget = new QWidget;
-    itemWidget->setLayout(createBox);
+    QWidget *systemWidget = new QWidget;
+    systemWidget->setLayout(createBox);
 
-    backgroundButtonGroup = new QButtonGroup(this);
-    connect(backgroundButtonGroup, SIGNAL(buttonClicked(QAbstractButton*)),
-            this, SLOT(backgroundButtonGroupClicked(QAbstractButton*)));
+    QVBoxLayout *simulationLayout = new QVBoxLayout;
 
-    QGridLayout *backgroundLayout = new QGridLayout;
-    backgroundLayout->addWidget(createBackgroundCellWidget(tr("Blue Grid"),
-                                                           ":/images/background1.png"), 0, 0);
-    backgroundLayout->addWidget(createBackgroundCellWidget(tr("White Grid"),
-                                                           ":/images/background2.png"), 0, 1);
-    backgroundLayout->addWidget(createBackgroundCellWidget(tr("Gray Grid"),
-                                                           ":/images/background3.png"), 1, 0);
-    backgroundLayout->addWidget(createBackgroundCellWidget(tr("No Grid"),
-                                                           ":/images/background4.png"), 1, 1);
+    QHBoxLayout *topControls = new QHBoxLayout;
 
-    backgroundLayout->setRowStretch(2, 10);
-    backgroundLayout->setColumnStretch(2, 10);
+    temperature = new QSpinBox;
+    temperature->setRange(0,999);
+    temperature->setValue(300);
+    temperature->setToolTip("Simulation temperature (K)");
 
-    QWidget *backgroundWidget = new QWidget;
-    backgroundWidget->setLayout(backgroundLayout);
+    seed = new QSpinBox;
+    seed->setRange(1,999);
+    seed->setValue(123);
+    seed->setToolTip("Random number generator seed");
 
+    QLabel *tempicon = new QLabel();
+    tempicon->setPixmap(QPixmap(":/icons/temp.png"));
+    tempicon->setToolTip("Temperature");
+
+    QLabel *diceicon = new QLabel();
+    diceicon->setPixmap(QPixmap(":/icons/dice.png"));
+    diceicon->setToolTip("Random number generator seed");
+
+    topControls->addWidget(tempicon);
+    topControls->addWidget(temperature);
+    topControls->addStretch(0);
+    topControls->addWidget(diceicon);
+    topControls->addWidget(seed);
+
+    QHBoxLayout *simulationControls = new QHBoxLayout;
+
+    startStopButton = new QToolButton;
+    startStopButton->setIconSize(QSize(24, 24));
+    startStopButton->setDefaultAction(startAction);
+
+    rewindButton = new QToolButton;
+    rewindButton->setIcon(QIcon(QPixmap(":/icons/rewind.png")));
+    rewindButton->setIconSize(QSize(24,24));
+    rewindButton->setToolTip("Rewind to beginning");
+
+    backButton = new QToolButton;
+    backButton->setIcon(QIcon(QPixmap(":/icons/back.png")));
+    backButton->setIconSize(QSize(24,24));
+    backButton->setToolTip("Step back");
+
+    forwardButton = new QToolButton;
+    forwardButton->setIcon(QIcon(QPixmap(":/icons/forward.png")));
+    forwardButton->setIconSize(QSize(24,24));
+    forwardButton->setToolTip("Step forward");
+
+    realTimeButton = new QToolButton;
+    realTimeButton->setIcon(QIcon(QPixmap(":/icons/time.png")));
+    realTimeButton->setIconSize(QSize(24,24));
+    realTimeButton->setCheckable(true);
+    realTimeButton->setChecked(false);
+    realTimeButton->setToolTip("Real time");
+
+    simulationControls->addWidget(startStopButton);
+    simulationControls->addStretch(0);
+    simulationControls->addWidget(rewindButton);
+    simulationControls->addStretch(0);
+    simulationControls->addWidget(backButton);
+    simulationControls->addStretch(0);
+    simulationControls->addWidget(forwardButton);
+    simulationControls->addStretch(0);
+    simulationControls->addWidget(realTimeButton);
+
+    delaySpinBox = new QDoubleSpinBox;
+    delaySpinBox->setRange(0,99);
+    delaySpinBox->setSingleStep(1.0);
+    delaySpinBox->setValue(1.0);
+    delaySpinBox->setToolTip("Step delay (s)");
+
+    detailComboBox = new QComboBox;
+    detailComboBox->addItem("1");
+    detailComboBox->addItem("2");
+    detailComboBox->addItem("3");
+    detailComboBox->setToolTip("Output detail");
+
+    simulationStatus = new QTextEdit;
+    simulationStatus->setReadOnly(true);
+    simulationStatus->setBackgroundRole(QPalette::NoRole);
+    simulationStatus->setMaximumWidth(204);
+    QPalette* palette = new QPalette();
+    palette->setColor(QPalette::Base,QColor(238,238,238,255));
+    simulationStatus->setPalette(*palette);
+
+    simulationLayout->addLayout(topControls);
+    simulationLayout->addSpacing(15);
+    simulationLayout->addLayout(simulationControls);
+    simulationLayout->addSpacing(15);
+    simulationLayout->addWidget(simulationStatus);
+    simulationLayout->addStretch(0);
+
+    QWidget *simulationWidget = new QWidget;
+    simulationWidget->setLayout(simulationLayout);
 
     toolBox = new QToolBox;
     toolBox->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Ignored));
-    toolBox->setMinimumWidth(itemWidget->sizeHint().width());
-    toolBox->addItem(itemWidget, tr("System"));
-    toolBox->addItem(backgroundWidget, tr("Simulation"));
+    toolBox->setMinimumWidth(systemWidget->sizeHint().width());
+    toolBox->addItem(systemWidget, tr("System"));
+    toolBox->addItem(simulationWidget, tr("Simulation"));
 }
 
 void MainWindow::createActions()
@@ -1136,6 +1217,16 @@ void MainWindow::createActions()
     setUnoccupied->setShortcut(Qt::Key_U);
     setUnoccupied->setStatusTip(tr("Set site as unoccupied"));
     connect(setUnoccupied, SIGNAL(triggered()), this, SLOT(unoccupied()));
+
+    startAction = new QAction(QIcon(":/icons/play.png"), "Start", this);
+    startAction->setShortcut(Qt::Key_P);
+    startAction->setToolTip(tr("Run KMC simulation"));
+    connect(startAction, SIGNAL(triggered()), this, SLOT(startKMC()));
+
+    stopAction = new QAction(QIcon(":/icons/pause.png"), "Stop", this);
+    stopAction->setShortcut(Qt::Key_S);
+    stopAction->setToolTip(tr("Stop KMC simulation"));
+    connect(stopAction, SIGNAL(triggered()), this, SLOT(stopKMC()));
 }
 
 
@@ -1162,47 +1253,6 @@ void MainWindow::createMenus()
     transMenu = menuBar()->addMenu(tr("&Transition"));
     transMenu->addAction(deleteAction);
 
-}
-
-QWidget *MainWindow::createBackgroundCellWidget(const QString &text, const QString &image)
-{
-    QToolButton *button = new QToolButton;
-    button->setText(text);
-    button->setIcon(QIcon(image));
-    button->setIconSize(QSize(50, 50));
-    button->setCheckable(true);
-    backgroundButtonGroup->addButton(button);
-
-    QGridLayout *layout = new QGridLayout;
-    layout->addWidget(button, 0, 0, Qt::AlignHCenter);
-    layout->addWidget(new QLabel(text), 1, 0, Qt::AlignCenter);
-
-    QWidget *widget = new QWidget;
-    widget->setLayout(layout);
-
-    return widget;
-}
-
-QWidget *MainWindow::createCellWidget(const QString &text)
-{
-
-    QToolButton *button = new QToolButton;
-    button->setIcon(QIcon(QPixmap(":/icons/uosite.png")));
-    button->setIconSize(QSize(32, 32));
-    button->setCheckable(true);
-    button->setToolTip("Unoccupied site");
-    buttonGroup->addButton(button);
-
-
-
-    QGridLayout *layout = new QGridLayout;
-    layout->addWidget(button, 0, 0, Qt::AlignHCenter);
-    layout->addWidget(new QLabel(text), 1, 0, Qt::AlignCenter);
-
-    QWidget *widget = new QWidget;
-    widget->setLayout(layout);
-
-    return widget;
 }
 
 void MainWindow::setupMatrix()
@@ -1676,4 +1726,32 @@ void MainWindow::exportSVG()
     scene->render(svgpainter);
     svgpainter->end();
     }
+}
+
+//start the KMC simulation
+void MainWindow::startKMC()
+{
+    startStopButton->setDefaultAction(stopAction);
+    qDebug() << "start";
+
+    simulationStatus->clear();
+    simulationStatus->setTextBackgroundColor(Qt::white);
+    simulationStatus->setTextColor(Qt::blue);
+}
+
+//stop the KMC simulation
+void MainWindow::stopKMC()
+{
+    startStopButton->setDefaultAction(startAction);
+    qDebug() << "stop";
+
+//    simulationStatus->setAlignment(Qt::AlignRight);
+
+    simulationStatus->append("0.7665");
+    simulationStatus->append("0.6565");
+    simulationStatus->append("0.1115");
+    simulationStatus->append("0.0965");
+    simulationStatus->append("0.2345");
+    simulationStatus->append("0.2352");
+
 }

@@ -45,7 +45,6 @@ public:
    MainWindow();
 
 private slots:
-    void backgroundButtonGroupClicked(QAbstractButton *button);
     void openfile();
     void savefile();
     void exportSVG();
@@ -74,6 +73,9 @@ private slots:
     void startModCBChanged();
     void endModCBChanged();
 
+    void startKMC();
+    void stopKMC();
+
     void closeEvent(QCloseEvent *event);
 
 private:
@@ -82,9 +84,9 @@ private:
     void createMenus();
     void drawCells();
     void redrawCells();
-    QWidget *createBackgroundCellWidget(const QString &text,
-                                        const QString &image);
-    QWidget *createCellWidget(const QString &text);
+//    QWidget *createBackgroundCellWidget(const QString &text,
+//                                        const QString &image);
+//    QWidget *createCellWidget(const QString &text);
 
     ConfigScene *scene;
     QGraphicsView *view;
@@ -116,17 +118,18 @@ private:
     QToolBox *toolBox;
     QButtonGroup *buttonGroup;
     QButtonGroup *pointerTypeGroup;
-    QButtonGroup *backgroundButtonGroup;
 
     QButtonGroup *sceneGroup;
     QToolButton *selectButton;
     QToolButton *addUsiteButton;
     QToolButton *addSiteButton;
     QToolButton *addTransButton;
+    QToolButton *deleteButton;
     QToolButton *snapButton;
     QToolButton *imageButton;
     QToolButton *cellSizeButton;
     QToolButton *expandButton;
+    QToolButton *colorPES;
 
     QSlider *zoomSlider;
 
@@ -138,9 +141,29 @@ private:
     QComboBox *endModifier;
     QDoubleSpinBox *startModSpinBox;
     QDoubleSpinBox *endModSpinBox;
+    QLabel *modimage;
 
     QDoubleSpinBox *startPreFactor;
     QDoubleSpinBox *endPreFactor;
+    QLabel *pfimage;
+
+    QSpinBox *temperature;
+    QSpinBox *seed;
+
+    QAction *startAction;
+    QAction *stopAction;
+    QToolButton *startStopButton;
+    QToolButton *rewindButton;
+    QToolButton *forwardButton;
+    QToolButton *backButton;
+    QToolButton *graphButton;
+
+    QDoubleSpinBox *delaySpinBox;
+
+    QToolButton *realTimeButton;
+    QComboBox *detailComboBox;
+
+    QTextEdit *simulationStatus;
 
     int xcell;
     int ycell;

@@ -12,5 +12,15 @@
         <file>icons/expand.png</file>
         <file>icons/modify.png</file>
         <file>icons/prefac.png</file>
+        <file>icons/temp.png</file>
+        <file>icons/dice.png</file>
+        <file>icons/play.png</file>
+        <file>icons/pause.png</file>
+        <file>icons/delete.png</file>
+        <file>icons/color.png</file>
+        <file>icons/time.png</file>
+        <file>icons/back.png</file>
+        <file>icons/forward.png</file>
+        <file>icons/rewind.png</file>
     </qresource>
 </RCC>

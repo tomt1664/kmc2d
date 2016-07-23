@@ -66,12 +66,12 @@ void CurveDisplay::paintEvent(QPaintEvent * /* event */)
 
     painter.setPen(QPen(Qt::lightGray, 2, Qt::SolidLine ));
     painter.drawLine(30,160,30,124-m_min1*20);
-    painter.drawLine(170,160,170,124-m_min2*20);
-    painter.drawLine(100,168,100,124-m_bar*20);
+    painter.drawLine(176,160,176,124-m_min2*20);
+    painter.drawLine(103,168,103,124-m_bar*20);
 
     painter.drawLine(30,184,30,190);
-    painter.drawLine(170,184,170,190);
-    painter.drawLine(100,176,100,190);
+    painter.drawLine(176,184,176,190);
+    painter.drawLine(103,176,103,190);
 
     painter.setPen(QPen(Qt::blue, 2, Qt::SolidLine));
     painter.setBrush(brush);
@@ -80,13 +80,13 @@ void CurveDisplay::paintEvent(QPaintEvent * /* event */)
     int iwidth = 30;
     QPainterPath path;
     path.moveTo(20, 120-m_min1*20);
-    path.cubicTo(20+iwidth+15, 120-m_min1*20, 100-iwidth, 120-m_bar*20, 100, 120-m_bar*20);
-    path.cubicTo(100+iwidth, 120-m_bar*20, 180-iwidth-15, 120-m_min2*20, 180, 120-m_min2*20);
+    path.cubicTo(20+iwidth+15, 120-m_min1*20, 103-iwidth, 120-m_bar*20, 103, 120-m_bar*20);
+    path.cubicTo(103+iwidth, 120-m_bar*20, 186-iwidth-15, 120-m_min2*20, 186, 120-m_min2*20);
     painter.drawPath(path);
 
     //draw the direction indicator
     QPointF startpoint(30,172);
-    QPointF endpoint(170,172);
+    QPointF endpoint(176,172);
     painter.setPen(QPen(QColor(80, 80, 255, 255), 2));
     painter.drawLine(startpoint,endpoint);
     painter.setBrush(QColor(255, 255, 255, 255));
