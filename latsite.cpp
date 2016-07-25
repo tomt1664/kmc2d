@@ -40,8 +40,9 @@ Site::Site(int stat, int img, QMenu *contextMenu, QGraphicsItem *parent)
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges, true);
 
     setZValue(-10);
-
+    m_highlight = 0;
     energy = 0.0;
+    setToolTip("E = "+QString::number(energy));
     for(int nn = 0; nn < 7; nn++) {
         nnmod[nn] = 0.0;
     }
@@ -122,7 +123,11 @@ void Site::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
         painter->setPen(QPen(QColor(80, 80, 255, 255), 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         painter->drawEllipse(-25, -25, 50, 50);
     }
-
+    if(m_highlight) {
+        painter->setBrush(QBrush(QColor(235, 0, 0, 255)));
+        painter->setPen(QPen(QColor(235, 0, 0, 255), 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter->drawEllipse(-25, -25, 50, 50);
+    }
 }
 
 void Site::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
@@ -139,6 +144,13 @@ void Site::updateTrans()
             transition->updatePosition();
         }
     }
+}
+
+// set the energy and the tooltip
+void Site::setEn(double en)
+{
+    energy = en;
+    setToolTip("E = "+QString::number(energy));
 }
 
 void Site::setNNMod(double men1, double men2, double men3, double men4, double men5, double men6)

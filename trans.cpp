@@ -27,6 +27,7 @@ Transition::Transition(QMenu *contextMenu, Site *startItem, Site *endItem, QGrap
 
     myStartItem = startItem;
     myEndItem = endItem;
+    setAcceptHoverEvents(true);
     setFlag(QGraphicsItem::ItemIsSelectable, true);
 
     QColor color(170,170,170,255);
@@ -37,6 +38,7 @@ Transition::Transition(QMenu *contextMenu, Site *startItem, Site *endItem, QGrap
     m_en = 1.0;
     m_startprefac = 10.0;
     m_endprefac = 10.0;
+    m_highlight = 0;
 }
 
 QRectF Transition::boundingRect() const
@@ -69,24 +71,31 @@ void Transition::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
         return;
 
     QPen myPen = pen();
-    myPen.setColor(Qt::darkGray);
 
-    painter->setPen(myPen);
     painter->setBrush(myColor);
 
+    if(m_highlight) {
+        myPen.setColor(QColor(235, 0, 0, 255));
+        myPen.setWidth(10);
+        painter->setPen(myPen);
+    } else {
+        myPen.setColor(Qt::darkGray);
+        myPen.setWidth(10);
+        painter->setPen(myPen);
+    }
     painter->drawLine(line());
 
     this->setZValue(-50);
-    if (isSelected()) {
+    if (isSelected() && !m_highlight) {
         myPen.setColor(QColor(80, 80, 255, 255));
         painter->setBrush(QColor(80, 80, 255, 255));
         painter->setPen(myPen);
         painter->drawLine(line());
         myPen.setWidth(7);
         painter->setPen(myPen);
-        painter->drawEllipse(myEndItem->pos(),24,24);
+        painter->drawEllipse(myEndItem->scenePos(),24,24);
         painter->setBrush(QColor(255, 255, 255, 255));
-        painter->drawEllipse(myStartItem->pos(),24,24);
+        painter->drawEllipse(myStartItem->scenePos(),24,24);
         this->setZValue(1000);
         myPen.setWidth(10);
         painter->setPen(myPen);

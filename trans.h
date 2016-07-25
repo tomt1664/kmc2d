@@ -29,6 +29,7 @@ class QPainterPath;
 class QObject;
 QT_END_NAMESPACE
 
+// class for the transition pathways that connect pairs of states
 class Transition : public QObject, public QGraphicsLineItem
 {
     Q_OBJECT
@@ -37,7 +38,7 @@ public:
     enum { Type = UserType + 4 };
 
     Transition(QMenu *contextMenu, Site *startItem, Site *endItem,
-      QGraphicsItem *parent = 0);
+      QGraphicsItem *parent = 0); // constructor: passed the start and end sites
 
     int type() const Q_DECL_OVERRIDE { return Type; }
     QRectF boundingRect() const Q_DECL_OVERRIDE;
@@ -46,19 +47,21 @@ public:
     Site *startItem() const { return myStartItem; }
     Site *endItem() const { return myEndItem; }
 
-    void setID(int id) { m_id = id; }
+    void setID(int id) { m_id = id; } // set pairing ID
     int id() { return m_id; }
-    double en() { return m_en; }
+    double en() { return m_en; } // barrier energy
     void setEn(double en) { m_en = en; }
-    void setStartPrefac(double pf) { m_startprefac = pf; }
+    void setStartPrefac(double pf) { m_startprefac = pf; } // forward prefactor
     double startPrefac() { return m_startprefac; }
-    void setEndPrefac(double pf) { m_endprefac = pf; }
+    void setEndPrefac(double pf) { m_endprefac = pf; } // backward prefactor
     double endPrefac() { return m_endprefac; }
 
     void updatePosition();
+    void highlight() { m_highlight = 1; } // highlight transition
+    void stopHighlight() { m_highlight = 0; } // turn off highlighting
 
 signals:
-    void selectedChange(QGraphicsItem *item);
+    void selectedChange(QGraphicsItem *item); // selected signals for the properties toolbox
     void deselectedChange(QGraphicsItem *item);
 
 protected:
@@ -67,14 +70,16 @@ protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) Q_DECL_OVERRIDE;
 
 private:
-    int m_id;
-    double m_en;
-    double m_startprefac;
-    double m_endprefac;
-    Site *myStartItem;
-    Site *myEndItem;
-    QColor myColor;
-    QMenu *myContextMenu;
+    int m_id; // pairing ID
+    int m_highlight; // basic highlight
+    int m_drawBars; // paint the barrier values
+    double m_en; // barrier energy
+    double m_startprefac; // forward prefactor
+    double m_endprefac; // backward prefactor
+    Site *myStartItem; // start site
+    Site *myEndItem; // end site
+    QColor myColor; // transition color
+    QMenu *myContextMenu; // right-click menu
 };
 
 #endif // TRANS_H

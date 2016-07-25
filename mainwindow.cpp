@@ -1120,6 +1120,9 @@ void MainWindow::createToolBox()
     realTimeButton->setChecked(false);
     realTimeButton->setToolTip("Real time");
 
+//    connect(forwardButton, SIGNAL(clicked()),this,SLOT(stepForward()));
+//    connect(backButton, SIGNAL(clicked()),this,SLOT(stepBack()));
+
     simulationControls->addWidget(startStopButton);
     simulationControls->addStretch(0);
     simulationControls->addWidget(rewindButton);
@@ -1737,6 +1740,16 @@ void MainWindow::startKMC()
     simulationStatus->clear();
     simulationStatus->setTextBackgroundColor(Qt::white);
     simulationStatus->setTextColor(Qt::blue);
+
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Site::Type) {
+        Site *site = qgraphicsitem_cast<Site *>(item);
+        if(site->stat()) {
+            site->highlight();
+            site->update();
+        }
+        }
+    }
 }
 
 //stop the KMC simulation
@@ -1747,11 +1760,33 @@ void MainWindow::stopKMC()
 
 //    simulationStatus->setAlignment(Qt::AlignRight);
 
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Site::Type) {
+        Site *site = qgraphicsitem_cast<Site *>(item);
+        if(site->stat()) {
+            site->stopHighlight();
+            site->update();
+        }
+        }
+    }
+
     simulationStatus->append("0.7665");
     simulationStatus->append("0.6565");
     simulationStatus->append("0.1115");
     simulationStatus->append("0.0965");
     simulationStatus->append("0.2345");
     simulationStatus->append("0.2352");
+
+}
+
+//move the KMC simulation forward 1 step
+void MainWindow::stepForward()
+{
+
+}
+
+//move the simulation back one step
+void MainWindow::stepBack()
+{
 
 }

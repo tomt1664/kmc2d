@@ -75,6 +75,8 @@ private slots:
 
     void startKMC();
     void stopKMC();
+    void stepForward();
+    void stepBack();
 
     void closeEvent(QCloseEvent *event);
 
@@ -84,9 +86,6 @@ private:
     void createMenus();
     void drawCells();
     void redrawCells();
-//    QWidget *createBackgroundCellWidget(const QString &text,
-//                                        const QString &image);
-//    QWidget *createCellWidget(const QString &text);
 
     ConfigScene *scene;
     QGraphicsView *view;
@@ -159,14 +158,16 @@ private:
     QToolButton *graphButton;
 
     QDoubleSpinBox *delaySpinBox;
-
     QToolButton *realTimeButton;
     QComboBox *detailComboBox;
-
     QTextEdit *simulationStatus;
 
-    int xcell;
-    int ycell;
+    long nstep; // KMC step
+    int kmcDetail; // detail printing
+
+    int xcell; // x cell dimension
+    int ycell; // y cell dimension
+
     QGraphicsRectItem *pcell1;
     QGraphicsRectItem *pcell2;
     QGraphicsRectItem *pcell3;

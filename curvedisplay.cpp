@@ -33,18 +33,33 @@ void CurveDisplay::setMin1(double min1)
 {
     m_min1 = min1;
     update();
+    float fbar = m_bar - m_min1;
+    float bbar = m_bar - m_min2;
+    if(fbar < 0.0) fbar = 0.0;
+    if(bbar < 0.0) bbar = 0.0;
+    setToolTip(QString::number(fbar)+" ->  <- "+QString::number(bbar));
 }
 
 void CurveDisplay::setMin2(double min2)
 {
     m_min2 = min2;
     update();
+    float fbar = m_bar - m_min1;
+    float bbar = m_bar - m_min2;
+    if(fbar < 0.0) fbar = 0.0;
+    if(bbar < 0.0) bbar = 0.0;
+    setToolTip(QString::number(fbar)+" ->  <- "+QString::number(bbar));
 }
 
 void CurveDisplay::setMin(double min)
 {
     m_min = min;
     update();
+    float fbar = m_bar - m_min1;
+    float bbar = m_bar - m_min2;
+    if(fbar < 0.0) fbar = 0.0;
+    if(bbar < 0.0) bbar = 0.0;
+    setToolTip(QString::number(fbar)+" ->  <- "+QString::number(bbar));
 }
 
 void CurveDisplay::setBar(double bar)
