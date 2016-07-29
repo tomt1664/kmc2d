@@ -88,6 +88,7 @@ MainWindow::MainWindow()
 
     setCentralWidget(widget);
     setWindowTitle(tr("KMC2D"));
+    qsrand(123);
 }
 
 //delete item
@@ -1086,6 +1087,9 @@ void MainWindow::createToolBox()
     diceicon->setPixmap(QPixmap(":/icons/dice.png"));
     diceicon->setToolTip("Random number generator seed");
 
+    connect(temperature, SIGNAL(valueChanged(int)),this,SLOT(setTemp(int)));
+    connect(seed, SIGNAL(valueChanged(int)),this,SLOT(setSeed(int)));
+
     topControls->addWidget(tempicon);
     topControls->addWidget(temperature);
     topControls->addStretch(0);
@@ -1120,8 +1124,8 @@ void MainWindow::createToolBox()
     realTimeButton->setChecked(false);
     realTimeButton->setToolTip("Real time");
 
-//    connect(forwardButton, SIGNAL(clicked()),this,SLOT(stepForward()));
-//    connect(backButton, SIGNAL(clicked()),this,SLOT(stepBack()));
+    connect(forwardButton, SIGNAL(clicked()),this,SLOT(stepForward()));
+    connect(backButton, SIGNAL(clicked()),this,SLOT(stepBack()));
 
     simulationControls->addWidget(startStopButton);
     simulationControls->addStretch(0);
@@ -1132,6 +1136,8 @@ void MainWindow::createToolBox()
     simulationControls->addWidget(forwardButton);
     simulationControls->addStretch(0);
     simulationControls->addWidget(realTimeButton);
+
+    QHBoxLayout *infoLayout = new QHBoxLayout;
 
     delaySpinBox = new QDoubleSpinBox;
     delaySpinBox->setRange(0,99);
@@ -1145,6 +1151,22 @@ void MainWindow::createToolBox()
     detailComboBox->addItem("3");
     detailComboBox->setToolTip("Output detail");
 
+    graphButton = new QToolButton;
+    graphButton->setIcon(QIcon(QPixmap(":/icons/plot.png")));
+    graphButton->setIconSize(QSize(24,24));
+    graphButton->setToolTip("Data plot");
+
+    QLabel *listicon = new QLabel();
+    listicon->setPixmap(QPixmap(":/icons/list.png"));
+    listicon->setToolTip("Output detail");
+
+    infoLayout->addWidget(delaySpinBox);
+    infoLayout->addStretch(0);
+    infoLayout->addWidget(listicon);
+    infoLayout->addWidget(detailComboBox);
+    infoLayout->addStretch(0);
+    infoLayout->addWidget(graphButton);
+
     simulationStatus = new QTextEdit;
     simulationStatus->setReadOnly(true);
     simulationStatus->setBackgroundRole(QPalette::NoRole);
@@ -1156,6 +1178,8 @@ void MainWindow::createToolBox()
     simulationLayout->addLayout(topControls);
     simulationLayout->addSpacing(15);
     simulationLayout->addLayout(simulationControls);
+    simulationLayout->addSpacing(15);
+    simulationLayout->addLayout(infoLayout);
     simulationLayout->addSpacing(15);
     simulationLayout->addWidget(simulationStatus);
     simulationLayout->addStretch(0);
@@ -1782,11 +1806,44 @@ void MainWindow::stopKMC()
 //move the KMC simulation forward 1 step
 void MainWindow::stepForward()
 {
+    // create energy list
+    QList<double> barList;
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Site::Type) {
+        Site *site = qgraphicsitem_cast<Site *>(item);
+        if(site->stat()) {
+            double site_en = site->en();
+            foreach(QGraphicsItem *titem, site->transList()) {
+                Transition *trans = qgraphicsitem_cast<Transition *>(titem);
+                double trans_en = trans->en();
+                double barrier = trans_en - site_en;
+                if(barrier < 0.0) barrier = 0;
+                if(trans->startItem()->stat() && trans->endItem()->stat()) barrier = 9.0;
+                barList.append(barrier);
+                qDebug() << "en " << barrier;
+            }
 
+        }
+        }
+    }
+
+    qDebug() << qrand()*1.0/RAND_MAX;
 }
 
 //move the simulation back one step
 void MainWindow::stepBack()
 {
 
+}
+
+//set the temperature
+void MainWindow::setTemp(int tmp)
+{
+    m_temp = tmp*1.0;
+}
+
+//set the seed of the Mersenne Twister
+void MainWindow::setSeed(int isd)
+{
+    qsrand(isd);
 }

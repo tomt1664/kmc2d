@@ -68,6 +68,7 @@ public:
 
     void highlight() { m_highlight = 1; } // highlight site
     void stopHighlight() { m_highlight = 0; } // turn off highlighting
+    QList<Transition *> transList() { return transitions; }
 
 protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) Q_DECL_OVERRIDE;

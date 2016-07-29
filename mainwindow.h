@@ -72,6 +72,8 @@ private slots:
     void endPreFacChanged();
     void startModCBChanged();
     void endModCBChanged();
+    void setTemp(int tmp);
+    void setSeed(int isd);
 
     void startKMC();
     void stopKMC();
@@ -164,6 +166,8 @@ private:
 
     long nstep; // KMC step
     int kmcDetail; // detail printing
+    double m_temp; // simulation temperature
+    double m_time; // simulation time
 
     int xcell; // x cell dimension
     int ycell; // y cell dimension

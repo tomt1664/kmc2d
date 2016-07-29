@@ -22,5 +22,7 @@
         <file>icons/back.png</file>
         <file>icons/forward.png</file>
         <file>icons/rewind.png</file>
+        <file>icons/plot.png</file>
+        <file>icons/list.png</file>
     </qresource>
 </RCC>
