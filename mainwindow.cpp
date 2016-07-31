@@ -88,7 +88,12 @@ MainWindow::MainWindow()
 
     setCentralWidget(widget);
     setWindowTitle(tr("KMC2D"));
+
+    //initialise simulation
     qsrand(123);
+    nstep = 0;
+    pstep = 1;
+    kmcDetail = 2;
 }
 
 //delete item
@@ -1117,12 +1122,12 @@ void MainWindow::createToolBox()
     forwardButton->setIconSize(QSize(24,24));
     forwardButton->setToolTip("Step forward");
 
-    realTimeButton = new QToolButton;
-    realTimeButton->setIcon(QIcon(QPixmap(":/icons/time.png")));
-    realTimeButton->setIconSize(QSize(24,24));
-    realTimeButton->setCheckable(true);
-    realTimeButton->setChecked(false);
-    realTimeButton->setToolTip("Real time");
+    recordButton = new QToolButton;
+    recordButton->setIcon(QIcon(QPixmap(":/icons/record.png")));
+    recordButton->setIconSize(QSize(24,24));
+    recordButton->setCheckable(true);
+    recordButton->setChecked(false);
+    recordButton->setToolTip("Save trajectory");
 
     connect(forwardButton, SIGNAL(clicked()),this,SLOT(stepForward()));
     connect(backButton, SIGNAL(clicked()),this,SLOT(stepBack()));
@@ -1135,7 +1140,7 @@ void MainWindow::createToolBox()
     simulationControls->addStretch(0);
     simulationControls->addWidget(forwardButton);
     simulationControls->addStretch(0);
-    simulationControls->addWidget(realTimeButton);
+    simulationControls->addWidget(recordButton);
 
     QHBoxLayout *infoLayout = new QHBoxLayout;
 
@@ -1167,10 +1172,26 @@ void MainWindow::createToolBox()
     infoLayout->addStretch(0);
     infoLayout->addWidget(graphButton);
 
+    QHBoxLayout *timeLayout = new QHBoxLayout;
+
+    QLabel *timeicon = new QLabel();
+    timeicon->setPixmap(QPixmap(":/icons/time.png"));
+    timeicon->setToolTip("Simulation time (s)");
+
+    simulationTime = new QLCDNumber;
+    simulationTime->setDecMode();
+    simulationTime->setSegmentStyle(QLCDNumber::Flat);
+    simulationTime->setDigitCount(16);
+    simulationTime->display(1234.5678);
+
+    timeLayout->addWidget(timeicon);
+    timeLayout->addSpacing(10);
+    timeLayout->addWidget(simulationTime);
+
     simulationStatus = new QTextEdit;
     simulationStatus->setReadOnly(true);
     simulationStatus->setBackgroundRole(QPalette::NoRole);
-    simulationStatus->setMaximumWidth(204);
+    simulationStatus->setMaximumWidth(210);
     QPalette* palette = new QPalette();
     palette->setColor(QPalette::Base,QColor(238,238,238,255));
     simulationStatus->setPalette(*palette);
@@ -1180,6 +1201,8 @@ void MainWindow::createToolBox()
     simulationLayout->addLayout(simulationControls);
     simulationLayout->addSpacing(15);
     simulationLayout->addLayout(infoLayout);
+    simulationLayout->addSpacing(15);
+    simulationLayout->addLayout(timeLayout);
     simulationLayout->addSpacing(15);
     simulationLayout->addWidget(simulationStatus);
     simulationLayout->addStretch(0);
@@ -1765,15 +1788,6 @@ void MainWindow::startKMC()
     simulationStatus->setTextBackgroundColor(Qt::white);
     simulationStatus->setTextColor(Qt::blue);
 
-    foreach (QGraphicsItem *item, scene->items()) {
-        if (item->type() == Site::Type) {
-        Site *site = qgraphicsitem_cast<Site *>(item);
-        if(site->stat()) {
-            site->highlight();
-            site->update();
-        }
-        }
-    }
 }
 
 //stop the KMC simulation
@@ -1784,50 +1798,91 @@ void MainWindow::stopKMC()
 
 //    simulationStatus->setAlignment(Qt::AlignRight);
 
-    foreach (QGraphicsItem *item, scene->items()) {
-        if (item->type() == Site::Type) {
-        Site *site = qgraphicsitem_cast<Site *>(item);
-        if(site->stat()) {
-            site->stopHighlight();
-            site->update();
-        }
-        }
-    }
-
-    simulationStatus->append("0.7665");
-    simulationStatus->append("0.6565");
-    simulationStatus->append("0.1115");
-    simulationStatus->append("0.0965");
-    simulationStatus->append("0.2345");
-    simulationStatus->append("0.2352");
 
 }
 
 //move the KMC simulation forward 1 step
 void MainWindow::stepForward()
-{
+{    
     // create energy list
-    QList<double> barList;
-    foreach (QGraphicsItem *item, scene->items()) {
-        if (item->type() == Site::Type) {
-        Site *site = qgraphicsitem_cast<Site *>(item);
-        if(site->stat()) {
-            double site_en = site->en();
-            foreach(QGraphicsItem *titem, site->transList()) {
-                Transition *trans = qgraphicsitem_cast<Transition *>(titem);
-                double trans_en = trans->en();
-                double barrier = trans_en - site_en;
-                if(barrier < 0.0) barrier = 0;
-                if(trans->startItem()->stat() && trans->endItem()->stat()) barrier = 9.0;
-                barList.append(barrier);
-                qDebug() << "en " << barrier;
-            }
+    if(pstep == 1) {
+        barPFList.clear();
+        foreach (QGraphicsItem *item, scene->items()) {
+            if (item->type() == Site::Type) {
+            Site *site = qgraphicsitem_cast<Site *>(item);
+            if(site->stat()) {
+                double site_en = site->en();
+                foreach(QGraphicsItem *titem, site->transList()) {
+                    Transition *trans = qgraphicsitem_cast<Transition *>(titem);
+                    double trans_en = trans->en();
+                    double barrier = trans_en - site_en;
+                    double prefac;
+                    if(trans->startItem() == site) {
+                        prefac = trans->startPrefac();
+                    }
+                    else {
+                        prefac = trans->endPrefac();
+                    }
+                    if(barrier < 0.0) barrier = 0;
+                    if(trans->startItem()->stat() && trans->endItem()->stat()) barrier = 9.0;
+                    QPointF barPF(barrier,prefac);
+                    barPFList.append(barPF);
+                }
 
+            }
+            }
         }
+        simulationStatus->clear();
+    }
+
+    //highlight exit barriers
+    if(kmcDetail > 1 && pstep == 1) {
+        foreach (QGraphicsItem *item, scene->items()) {
+            if (item->type() == Site::Type) {
+                Site *site = qgraphicsitem_cast<Site *>(item);
+                if(site->stat()) {
+                    foreach(QGraphicsItem *titem, site->transList()) {
+                        Transition *trans = qgraphicsitem_cast<Transition *>(titem);
+                        if(!(trans->startItem()->stat() && trans->endItem()->stat())) {
+                            trans->highlight();
+                            trans->update();
+                        }
+                    }
+                }
+            }
+        }
+
+        //print barriers
+        simulationStatus->append("Bar (eV) \t Pre-fac (THz)");
+        foreach(QPointF barPF, barPFList) {
+            QString en_val = QString::number(barPF.x());
+            QString pf_val = QString::number(barPF.y());
+            if(barPF.x() < 8.0) {
+                simulationStatus->append(en_val + "\t" + pf_val);
+            }
         }
     }
 
-    qDebug() << qrand()*1.0/RAND_MAX;
+    if(kmcDetail > 1 && pstep == 2) {
+        foreach (QGraphicsItem *item, scene->items()) {
+            if (item->type() == Site::Type) {
+            Site *site = qgraphicsitem_cast<Site *>(item);
+            foreach(QGraphicsItem *titem, site->transList()) {
+                Transition *trans = qgraphicsitem_cast<Transition *>(titem);
+                trans->stopHighlight();
+                trans->update();
+            }
+            }
+        }
+    }
+
+    if(pstep == 1) {
+        pstep = 2;
+    } else if(pstep == 2) {
+        pstep = 1;
+    }
+
+    qDebug() << qrand()*1.0/RAND_MAX << " " << pstep;
 }
 
 //move the simulation back one step
@@ -1846,4 +1901,6 @@ void MainWindow::setTemp(int tmp)
 void MainWindow::setSeed(int isd)
 {
     qsrand(isd);
+    nstep = 0;
+    pstep = 1;
 }

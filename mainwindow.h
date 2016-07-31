@@ -160,14 +160,18 @@ private:
     QToolButton *graphButton;
 
     QDoubleSpinBox *delaySpinBox;
-    QToolButton *realTimeButton;
+    QToolButton *recordButton;
     QComboBox *detailComboBox;
+    QLCDNumber *simulationTime;
     QTextEdit *simulationStatus;
 
     long nstep; // KMC step
+    int pstep; // detail step
     int kmcDetail; // detail printing
     double m_temp; // simulation temperature
     double m_time; // simulation time
+
+    QList<QPointF> barPFList; // active barrier and PF list
 
     int xcell; // x cell dimension
     int ycell; // y cell dimension

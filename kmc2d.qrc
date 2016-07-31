@@ -24,5 +24,6 @@
         <file>icons/rewind.png</file>
         <file>icons/plot.png</file>
         <file>icons/list.png</file>
+        <file>icons/record.png</file>
     </qresource>
 </RCC>
