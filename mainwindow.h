@@ -169,9 +169,13 @@ private:
     int pstep; // detail step
     int kmcDetail; // detail printing
     double m_temp; // simulation temperature
+    double m_beta; // Boltzman factor
     double m_time; // simulation time
 
     QList<QPointF> barPFList; // active barrier and PF list
+    QList<double> rateList; // list of all the exit rates
+    QList<QGraphicsItem *> transList; //list of transition pointers
+    double rateTotal; // the sum of all the exit pathway rates
 
     int xcell; // x cell dimension
     int ycell; // y cell dimension

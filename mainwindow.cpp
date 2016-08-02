@@ -94,6 +94,7 @@ MainWindow::MainWindow()
     nstep = 0;
     pstep = 1;
     kmcDetail = 2;
+    setTemp(300);
 }
 
 //delete item
@@ -1803,10 +1804,13 @@ void MainWindow::stopKMC()
 
 //move the KMC simulation forward 1 step
 void MainWindow::stepForward()
-{    
-    // create energy list
+{
+    // create energy and rate list
     if(pstep == 1) {
         barPFList.clear();
+        rateList.clear();
+        transList.clear();
+        rateTotal = 0.0;
         foreach (QGraphicsItem *item, scene->items()) {
             if (item->type() == Site::Type) {
             Site *site = qgraphicsitem_cast<Site *>(item);
@@ -1827,13 +1831,20 @@ void MainWindow::stepForward()
                     if(trans->startItem()->stat() && trans->endItem()->stat()) barrier = 9.0;
                     QPointF barPF(barrier,prefac);
                     barPFList.append(barPF);
+                    double pathRate = (prefac*1.0e12)*qExp(-barrier*m_beta);
+                    rateList.append(pathRate);
+                    rateTotal += pathRate;
+                    transList.append(titem);
+                    trans->stopHighlight();
+                    trans->update();
                 }
-
             }
             }
         }
         simulationStatus->clear();
     }
+
+            qDebug() << rateList.size();
 
     //highlight exit barriers
     if(kmcDetail > 1 && pstep == 1) {
@@ -1876,13 +1887,38 @@ void MainWindow::stepForward()
         }
     }
 
+    // select transition pathway
+    QGraphicsItem *transPath;
+    double transProb = 0.0;
+    int icount = 0;
+    if(pstep == 3) {
+        double ran1 = qrand()*1.0/RAND_MAX;
+        qDebug() << rateList.size();
+        foreach(double pathRate, rateList) {
+            qDebug() << transProb << " " << transProb + pathRate/rateTotal;
+            if(ran1 > transProb && ran1 <= (transProb + pathRate/rateTotal)) {
+                transPath = transList[icount];
+                break;
+            }
+            transProb += pathRate/rateTotal;
+            icount++;
+        }
+        simulationStatus->clear();
+        simulationStatus->append("Rand: "+QString::number(ran1));
+        simulationStatus->append(" ");
+        simulationStatus->append("Selected: " + QString::number(icount));
+
+        qgraphicsitem_cast<Transition *>(transPath)->highlight();
+        qgraphicsitem_cast<Transition *>(transPath)->update();
+    }
+
     if(pstep == 1) {
         pstep = 2;
     } else if(pstep == 2) {
+        pstep = 3;
+    } else if(pstep == 3) {
         pstep = 1;
     }
-
-    qDebug() << qrand()*1.0/RAND_MAX << " " << pstep;
 }
 
 //move the simulation back one step
@@ -1895,6 +1931,7 @@ void MainWindow::stepBack()
 void MainWindow::setTemp(int tmp)
 {
     m_temp = tmp*1.0;
+    m_beta = 1.60217662e-19/(m_temp*1.38064852e-23);
 }
 
 //set the seed of the Mersenne Twister
