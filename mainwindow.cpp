@@ -201,6 +201,12 @@ void MainWindow::clearCell()
     endModSpinBox->setDisabled(true);
     startPreFactor->setDisabled(true);
     endPreFactor->setDisabled(true);
+
+    simulationStatus->clear();
+    simulationTime->setText(QString::number(0.0));
+    m_time = 0.0;
+    nstep = 0;
+    pstep = 1;
 }
 
 void MainWindow::sceneGroupClicked(int)
@@ -740,7 +746,6 @@ void MainWindow::startModChanged()
 {
     double energy = startModSpinBox->value();
     int nn = startModifier->currentIndex() + 1;
-    qDebug() << energy << " " << nn;
     scene->setStartMod(nn, energy);
 }
 
@@ -749,7 +754,6 @@ void MainWindow::endModChanged()
 {
     double energy = endModSpinBox->value();
     int nn = endModifier->currentIndex() + 1;
-    qDebug() << energy << " " << nn;
     scene->setEndMod(nn, energy);
 }
 
@@ -757,7 +761,6 @@ void MainWindow::endModChanged()
 void MainWindow::startPreFacChanged()
 {
     double pf = startPreFactor->value();
-    qDebug() << pf;
     scene->setStartPreFac(pf);
 }
 
@@ -765,7 +768,6 @@ void MainWindow::startPreFacChanged()
 void MainWindow::endPreFacChanged()
 {
     double pf = endPreFactor->value();
-    qDebug() << pf;
     scene->setEndPreFac(pf);
 }
 
@@ -1179,11 +1181,12 @@ void MainWindow::createToolBox()
     timeicon->setPixmap(QPixmap(":/icons/time.png"));
     timeicon->setToolTip("Simulation time (s)");
 
-    simulationTime = new QLCDNumber;
-    simulationTime->setDecMode();
-    simulationTime->setSegmentStyle(QLCDNumber::Flat);
-    simulationTime->setDigitCount(16);
-    simulationTime->display(1234.5678);
+    simulationTime = new QLabel;
+    simulationTime->setMaximumWidth(160);
+    QPalette* palette = new QPalette();
+    palette->setColor(QPalette::Base,QColor(238,238,238,255));
+    simulationTime->setPalette(*palette);
+    simulationTime->setText(QString::number(0.0));
 
     timeLayout->addWidget(timeicon);
     timeLayout->addSpacing(10);
@@ -1193,8 +1196,6 @@ void MainWindow::createToolBox()
     simulationStatus->setReadOnly(true);
     simulationStatus->setBackgroundRole(QPalette::NoRole);
     simulationStatus->setMaximumWidth(210);
-    QPalette* palette = new QPalette();
-    palette->setColor(QPalette::Base,QColor(238,238,238,255));
     simulationStatus->setPalette(*palette);
 
     simulationLayout->addLayout(topControls);
@@ -1485,19 +1486,15 @@ void MainWindow::openfile()
             xmlReader.readNext();
             if(xmlReader.isStartElement()) {
                 QString name = xmlReader.name().toString();
-                qDebug() << name;
                 if(name == "Cell") {
-                    qDebug() << "Cell element";
                     QXmlStreamAttributes attributes = xmlReader.attributes();
                     foreach(QXmlStreamAttribute attribute, attributes) {
                         QString aname = attribute.name().toString();
                         QString avalue = attribute.value().toString();
                         if(aname == "xDim") {
-                            qDebug() << "x dimension " << avalue;
                             xcell = avalue.toInt();
                         }
                         if(aname == "yDim") {
-                            qDebug() << "y dimension " << avalue;
                             ycell = avalue.toInt();
                         }
                     }
@@ -1509,7 +1506,6 @@ void MainWindow::openfile()
                     redrawCells();
                 }
                 if(name == "Site") {
-                    qDebug() << "Site element";
                     QXmlStreamAttributes attributes = xmlReader.attributes();
                     int xcrd,ycrd,occt;
                     double ent,m1,m2,m3,m4,m5,m6 = 0.0;
@@ -1518,22 +1514,18 @@ void MainWindow::openfile()
                         QString aname = attribute.name().toString();
                         QString avalue = attribute.value().toString();
                         if(aname == "xCoord") {
-                            qDebug() << "x dimension = " << avalue;
                             xcrd = avalue.toInt();
                             sum++;
                         }
                         if(aname == "yCoord") {
-                            qDebug() << "y dimension = " << avalue;
                             ycrd = avalue.toInt();
                             sum++;
                         }
                         if(aname == "Occ") {
-                            qDebug() << "occupation = " << avalue;
                             occt = avalue.toInt();
                             sum++;
                         }
                         if(aname == "En") {
-                            qDebug() << "energy = " << avalue;
                             ent = avalue.toDouble();
                             sum++;
                         }
@@ -1553,7 +1545,6 @@ void MainWindow::openfile()
                     scene->addSite(occt,ent,xcrd,ycrd,0,0,0,m1,m2,m3,m4,m5,m6);
                 }
                 if(name == "Transition") {
-                    qDebug() << "Transition element";
                     QXmlStreamAttributes attributes = xmlReader.attributes();
                     int sxcrd,sycrd,excrd,eycrd,idt;
                     double ent,fpf,bpf;
@@ -1562,43 +1553,34 @@ void MainWindow::openfile()
                         QString aname = attribute.name().toString();
                         QString avalue = attribute.value().toString();
                         if(aname == "xStart") {
-                            qDebug() << "x start = " << avalue;
                             sxcrd = avalue.toInt();
                             sum++;
                         }
                         if(aname == "yStart") {
-                            qDebug() << "y dimension = " << avalue;
                             sycrd = avalue.toInt();
                             sum++;
                         }
                         if(aname == "xEnd") {
-                            qDebug() << "x end = " << avalue;
                             excrd = avalue.toInt();
                             sum++;
                         }
                         if(aname == "yEnd") {
-                            qDebug() << "y end = " << avalue;
                             eycrd = avalue.toInt();
                             sum++;
                         }
                         if(aname == "En") {
-                            qDebug() << "energy = " << avalue;
                             ent = avalue.toDouble();
-                            qDebug() << "energyd = " << ent;
                             sum++;
                         }
                         if(aname == "startPF") {
-                            qDebug() << "spf = " << avalue;
                             fpf = avalue.toDouble();
                             sum++;
                         }
                         if(aname == "endPF") {
-                            qDebug() << "epf = " << avalue;
                             bpf = avalue.toDouble();
                             sum++;
                         }
                         if(aname == "ID") {
-                            qDebug() << "id = " << avalue;
                             idt = avalue.toInt();
                             sum++;
                         }
@@ -1783,7 +1765,6 @@ void MainWindow::exportSVG()
 void MainWindow::startKMC()
 {
     startStopButton->setDefaultAction(stopAction);
-    qDebug() << "start";
 
     simulationStatus->clear();
     simulationStatus->setTextBackgroundColor(Qt::white);
@@ -1795,7 +1776,6 @@ void MainWindow::startKMC()
 void MainWindow::stopKMC()
 {
     startStopButton->setDefaultAction(startAction);
-    qDebug() << "stop";
 
 //    simulationStatus->setAlignment(Qt::AlignRight);
 
@@ -1811,13 +1791,17 @@ void MainWindow::stepForward()
         rateList.clear();
         transList.clear();
         rateTotal = 0.0;
+        bool sceneEmpty = true;
         foreach (QGraphicsItem *item, scene->items()) {
             if (item->type() == Site::Type) {
             Site *site = qgraphicsitem_cast<Site *>(item);
+            site->stopHighlight();
             if(site->stat()) {
                 double site_en = site->en();
                 foreach(QGraphicsItem *titem, site->transList()) {
+                    sceneEmpty = false;
                     Transition *trans = qgraphicsitem_cast<Transition *>(titem);
+                    trans->stopHighlight();
                     double trans_en = trans->en();
                     double barrier = trans_en - site_en;
                     double prefac;
@@ -1828,26 +1812,26 @@ void MainWindow::stepForward()
                         prefac = trans->endPrefac();
                     }
                     if(barrier < 0.0) barrier = 0;
-                    if(trans->startItem()->stat() && trans->endItem()->stat()) barrier = 9.0;
-                    QPointF barPF(barrier,prefac);
-                    barPFList.append(barPF);
-                    double pathRate = (prefac*1.0e12)*qExp(-barrier*m_beta);
-                    rateList.append(pathRate);
-                    rateTotal += pathRate;
-                    transList.append(titem);
+                    if(!(trans->startItem()->stat() && trans->endItem()->stat())) {
+                        QPointF barPF(barrier,prefac);
+                        barPFList.append(barPF);
+                        double pathRate = (prefac*1.0e12)*qExp(-barrier*m_beta);
+                        rateList.append(pathRate);
+                        rateTotal += pathRate;
+                        transList.append(titem);
+                    }
                     trans->stopHighlight();
                     trans->update();
                 }
             }
             }
         }
+        if(sceneEmpty) return;
         simulationStatus->clear();
     }
 
-            qDebug() << rateList.size();
-
     //highlight exit barriers
-    if(kmcDetail > 1 && pstep == 1) {
+    if(pstep == 1) {
         foreach (QGraphicsItem *item, scene->items()) {
             if (item->type() == Site::Type) {
                 Site *site = qgraphicsitem_cast<Site *>(item);
@@ -1864,17 +1848,34 @@ void MainWindow::stepForward()
         }
 
         //print barriers
+        simulationStatus->setTextColor(Qt::blue);
         simulationStatus->append("Bar (eV) \t Pre-fac (THz)");
+        simulationStatus->setTextColor(Qt::black);
+        simulationStatus->append(" ");
         foreach(QPointF barPF, barPFList) {
             QString en_val = QString::number(barPF.x());
             QString pf_val = QString::number(barPF.y());
-            if(barPF.x() < 8.0) {
-                simulationStatus->append(en_val + "\t" + pf_val);
-            }
+            simulationStatus->setAlignment(Qt::AlignLeft);
+            simulationStatus->append(en_val + "\t" + pf_val);
         }
     }
 
-    if(kmcDetail > 1 && pstep == 2) {
+    if(pstep == 2) {
+        //print rates
+        simulationStatus->clear();
+        simulationStatus->setTextColor(Qt::blue);
+        simulationStatus->append("Rates (Hz):");
+        simulationStatus->append(" ");
+        simulationStatus->setTextColor(Qt::black);
+        foreach(double irate, rateList) {
+            QString prate = QString::number(irate);
+            simulationStatus->setAlignment(Qt::AlignRight);
+            simulationStatus->append(prate);
+        }
+    }
+
+    // select transition pathway
+    if(pstep == 3) {
         foreach (QGraphicsItem *item, scene->items()) {
             if (item->type() == Site::Type) {
             Site *site = qgraphicsitem_cast<Site *>(item);
@@ -1885,17 +1886,10 @@ void MainWindow::stepForward()
             }
             }
         }
-    }
-
-    // select transition pathway
-    QGraphicsItem *transPath;
-    double transProb = 0.0;
-    int icount = 0;
-    if(pstep == 3) {
+        double transProb = 0.0;
+        int icount = 0;
         double ran1 = qrand()*1.0/RAND_MAX;
-        qDebug() << rateList.size();
         foreach(double pathRate, rateList) {
-            qDebug() << transProb << " " << transProb + pathRate/rateTotal;
             if(ran1 > transProb && ran1 <= (transProb + pathRate/rateTotal)) {
                 transPath = transList[icount];
                 break;
@@ -1903,22 +1897,76 @@ void MainWindow::stepForward()
             transProb += pathRate/rateTotal;
             icount++;
         }
+        qDebug() << icount;
         simulationStatus->clear();
+        simulationStatus->setAlignment(Qt::AlignLeft);
+        simulationStatus->setTextColor(Qt::red);
         simulationStatus->append("Rand: "+QString::number(ran1));
+        simulationStatus->setTextColor(Qt::black);
         simulationStatus->append(" ");
-        simulationStatus->append("Selected: " + QString::number(icount));
+        int pcount = 0;
+        foreach(double irate, rateList) {
+            QString prate = QString::number(irate);
+            simulationStatus->setAlignment(Qt::AlignRight);
+            if(icount == pcount) {
+               simulationStatus->setTextBackgroundColor(Qt::red);
+            } else {
+               simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
+            }
+            simulationStatus->append(prate);
+            pcount++;
+        }
+        simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
+
 
         qgraphicsitem_cast<Transition *>(transPath)->highlight();
         qgraphicsitem_cast<Transition *>(transPath)->update();
+
+
     }
 
-    if(pstep == 1) {
-        pstep = 2;
-    } else if(pstep == 2) {
-        pstep = 3;
-    } else if(pstep == 3) {
-        pstep = 1;
+    //perform the transition
+    if(pstep == 4) {
+        if(qgraphicsitem_cast<Transition *>(transPath)->startItem()->stat()) {
+            qgraphicsitem_cast<Transition *>(transPath)->startItem()->off();
+            qgraphicsitem_cast<Transition *>(transPath)->startItem()->update();
+            qgraphicsitem_cast<Transition *>(transPath)->endItem()->on();
+            qgraphicsitem_cast<Transition *>(transPath)->endItem()->highlight();
+            qgraphicsitem_cast<Transition *>(transPath)->endItem()->update();
+        } else {
+            qgraphicsitem_cast<Transition *>(transPath)->endItem()->off();
+            qgraphicsitem_cast<Transition *>(transPath)->endItem()->update();
+            qgraphicsitem_cast<Transition *>(transPath)->startItem()->on();
+            qgraphicsitem_cast<Transition *>(transPath)->startItem()->highlight();
+            qgraphicsitem_cast<Transition *>(transPath)->startItem()->update();
+        }
     }
+
+    //update time
+    if(pstep == 5) {
+        qgraphicsitem_cast<Transition *>(transPath)->stopHighlight();
+        qgraphicsitem_cast<Transition *>(transPath)->update();
+
+        double timeInt;
+        double ran2 = qrand()*1.0/RAND_MAX;
+        timeInt = -qLn(ran2)/rateTotal;
+        simulationStatus->clear();
+        simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
+        simulationStatus->setAlignment(Qt::AlignLeft);
+        simulationStatus->setTextColor(Qt::blue);
+        simulationStatus->append("Residence time (s):");
+        simulationStatus->append(" ");
+        simulationStatus->setTextColor(Qt::black);
+        simulationStatus->setAlignment(Qt::AlignLeft);
+        simulationStatus->append(QString::number(timeInt));
+        simulationStatus->setAlignment(Qt::AlignRight);
+        m_time += timeInt;
+        simulationTime->clear();
+        simulationTime->setText(QString::number(m_time));
+    }
+
+    pstep++;
+    if(pstep > 5) pstep = 1;
 }
 
 //move the simulation back one step

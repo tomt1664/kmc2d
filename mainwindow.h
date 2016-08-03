@@ -89,13 +89,15 @@ private:
     void drawCells();
     void redrawCells();
 
+    //mainwindow components
     ConfigScene *scene;
     QGraphicsView *view;
     QGraphicsRectItem *cell;
     QGraphicsRectItem *perarea;
-
     CurveDisplay *curveDisplay;
+    QSlider *zoomSlider;
 
+    //actions
     QAction *exitAction;
     QAction *addAction;
     QAction *deleteAction;
@@ -106,20 +108,19 @@ private:
     QAction *saveAction;
     QAction *clearAction;
     QAction *exportAction;
-
     QAction *aboutAction;
 
+    //menus
     QMenu *fileMenu;
     QMenu *itemMenu;
     QMenu *aboutMenu;
-
     QMenu *siteMenu;
     QMenu *transMenu;
 
+    //toolbox
     QToolBox *toolBox;
     QButtonGroup *buttonGroup;
     QButtonGroup *pointerTypeGroup;
-
     QButtonGroup *sceneGroup;
     QToolButton *selectButton;
     QToolButton *addUsiteButton;
@@ -132,25 +133,21 @@ private:
     QToolButton *expandButton;
     QToolButton *colorPES;
 
-    QSlider *zoomSlider;
-
     QDoubleSpinBox *barSpinBox;
     QDoubleSpinBox *min1SpinBox;
     QDoubleSpinBox *min2SpinBox;
-
     QComboBox *startModifier;
     QComboBox *endModifier;
     QDoubleSpinBox *startModSpinBox;
     QDoubleSpinBox *endModSpinBox;
     QLabel *modimage;
-
     QDoubleSpinBox *startPreFactor;
     QDoubleSpinBox *endPreFactor;
     QLabel *pfimage;
 
+    //simulation toolbox
     QSpinBox *temperature;
     QSpinBox *seed;
-
     QAction *startAction;
     QAction *stopAction;
     QToolButton *startStopButton;
@@ -162,9 +159,10 @@ private:
     QDoubleSpinBox *delaySpinBox;
     QToolButton *recordButton;
     QComboBox *detailComboBox;
-    QLCDNumber *simulationTime;
+    QLabel *simulationTime;
     QTextEdit *simulationStatus;
 
+    //simulation parameters and lists
     long nstep; // KMC step
     int pstep; // detail step
     int kmcDetail; // detail printing
@@ -176,7 +174,9 @@ private:
     QList<double> rateList; // list of all the exit rates
     QList<QGraphicsItem *> transList; //list of transition pointers
     double rateTotal; // the sum of all the exit pathway rates
+    QGraphicsItem *transPath; // the chosen path
 
+    //periodic images
     int xcell; // x cell dimension
     int ycell; // y cell dimension
 
@@ -188,7 +188,6 @@ private:
     QGraphicsRectItem *pcell6;
     QGraphicsRectItem *pcell7;
     QGraphicsRectItem *pcell8;
-
     QGraphicsRectItem *pcellc1;
     QGraphicsRectItem *pcellc2;
     QGraphicsRectItem *pcellc3;
