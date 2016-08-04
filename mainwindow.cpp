@@ -793,6 +793,12 @@ void MainWindow::endModCBChanged()
     }
 }
 
+//update output detail
+void MainWindow::simDetailChanged()
+{
+    kmcDetail = detailComboBox->currentIndex() + 1;
+}
+
 //set site as occupied
 void MainWindow::occupied()
 {
@@ -800,6 +806,10 @@ void MainWindow::occupied()
         if (item->type() == Site::Type) {
             Site *site = qgraphicsitem_cast<Site *>(item);
             site->on();
+            foreach (QGraphicsItem *child, item->childItems() )
+            {
+                qgraphicsitem_cast<Site *>(child)->on();
+            }
         }
     }
     scene->update();
@@ -812,6 +822,10 @@ void MainWindow::unoccupied()
         if (item->type() == Site::Type) {
             Site *site = qgraphicsitem_cast<Site *>(item);
             site->off();
+            foreach (QGraphicsItem *child, item->childItems() )
+            {
+                qgraphicsitem_cast<Site *>(child)->off();
+            }
         }
     }
     scene->update();
@@ -1158,6 +1172,9 @@ void MainWindow::createToolBox()
     detailComboBox->addItem("2");
     detailComboBox->addItem("3");
     detailComboBox->setToolTip("Output detail");
+
+    connect(detailComboBox, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(simDetailChanged()));
 
     graphButton = new QToolButton;
     graphButton->setIcon(QIcon(QPixmap(":/icons/plot.png")));
@@ -1793,17 +1810,29 @@ void MainWindow::stepForward()
         rateTotal = 0.0;
         bool sceneEmpty = true;
         foreach (QGraphicsItem *item, scene->items()) {
-            if (item->type() == Site::Type) {
+            if (item->type() == Site::Type && qgraphicsitem_cast<Site *>(item)->img() == 0) {
             Site *site = qgraphicsitem_cast<Site *>(item);
             site->stopHighlight();
             if(site->stat()) {
                 double site_en = site->en();
+                //apply coordination modifier to minima
+                int coordination = 0;
+                double mod_en = 0.0;
+                foreach(QGraphicsItem *citem, site->transList()) {
+                    if(qgraphicsitem_cast<Transition *>(citem)->startItem()->stat() &&
+                            qgraphicsitem_cast<Transition *>(citem)->endItem()->stat()) {
+                        coordination++;
+                    }
+                }
+                if(coordination > 0) {
+                    mod_en = site->nnMod(coordination);
+                }
                 foreach(QGraphicsItem *titem, site->transList()) {
                     sceneEmpty = false;
                     Transition *trans = qgraphicsitem_cast<Transition *>(titem);
                     trans->stopHighlight();
                     double trans_en = trans->en();
-                    double barrier = trans_en - site_en;
+                    double barrier = trans_en - site_en - mod_en;
                     double prefac;
                     if(trans->startItem() == site) {
                         prefac = trans->startPrefac();
@@ -1930,15 +1959,54 @@ void MainWindow::stepForward()
         if(qgraphicsitem_cast<Transition *>(transPath)->startItem()->stat()) {
             qgraphicsitem_cast<Transition *>(transPath)->startItem()->off();
             qgraphicsitem_cast<Transition *>(transPath)->startItem()->update();
-            qgraphicsitem_cast<Transition *>(transPath)->endItem()->on();
-            qgraphicsitem_cast<Transition *>(transPath)->endItem()->highlight();
-            qgraphicsitem_cast<Transition *>(transPath)->endItem()->update();
+            foreach (QGraphicsItem *child, qgraphicsitem_cast<Transition *>(transPath)->startItem()->childItems()) {
+                qgraphicsitem_cast<Site *>(child)->off();
+                qgraphicsitem_cast<Site *>(child)->update();
+            }
+            if(qgraphicsitem_cast<Transition *>(transPath)->endItem()->childItems().size() > 0) {
+                qgraphicsitem_cast<Transition *>(transPath)->endItem()->on();
+                qgraphicsitem_cast<Transition *>(transPath)->endItem()->highlight();
+                qgraphicsitem_cast<Transition *>(transPath)->endItem()->update();
+                foreach (QGraphicsItem *child, qgraphicsitem_cast<Transition *>(transPath)->endItem()->childItems()) {
+                    qgraphicsitem_cast<Site *>(child)->on();
+                    qgraphicsitem_cast<Site *>(child)->update();
+                }
+            } else {
+                QGraphicsItem *parent = qgraphicsitem_cast<Transition *>(transPath)->endItem()->parentItem();
+                qgraphicsitem_cast<Site *>(parent)->on();
+                qgraphicsitem_cast<Site *>(parent)->highlight();
+                qgraphicsitem_cast<Site *>(parent)->update();
+                foreach (QGraphicsItem *child, parent->childItems()) {
+                    qgraphicsitem_cast<Site *>(child)->on();
+                    qgraphicsitem_cast<Site *>(child)->update();
+                }
+            }
+
         } else {
             qgraphicsitem_cast<Transition *>(transPath)->endItem()->off();
             qgraphicsitem_cast<Transition *>(transPath)->endItem()->update();
-            qgraphicsitem_cast<Transition *>(transPath)->startItem()->on();
-            qgraphicsitem_cast<Transition *>(transPath)->startItem()->highlight();
-            qgraphicsitem_cast<Transition *>(transPath)->startItem()->update();
+            foreach (QGraphicsItem *child, qgraphicsitem_cast<Transition *>(transPath)->endItem()->childItems()) {
+                qgraphicsitem_cast<Site *>(child)->off();
+                qgraphicsitem_cast<Site *>(child)->update();
+            }
+            if(qgraphicsitem_cast<Transition *>(transPath)->startItem()->childItems().size() > 0) {
+                qgraphicsitem_cast<Transition *>(transPath)->startItem()->on();
+                qgraphicsitem_cast<Transition *>(transPath)->startItem()->highlight();
+                qgraphicsitem_cast<Transition *>(transPath)->startItem()->update();
+                foreach (QGraphicsItem *child, qgraphicsitem_cast<Transition *>(transPath)->startItem()->childItems()) {
+                    qgraphicsitem_cast<Site *>(child)->on();
+                    qgraphicsitem_cast<Site *>(child)->update();
+                }
+            } else {
+                QGraphicsItem *parent = qgraphicsitem_cast<Transition *>(transPath)->startItem()->parentItem();
+                qgraphicsitem_cast<Site *>(parent)->on();
+                qgraphicsitem_cast<Site *>(parent)->highlight();
+                qgraphicsitem_cast<Site *>(parent)->update();
+                foreach (QGraphicsItem *child, parent->childItems()) {
+                    qgraphicsitem_cast<Site *>(child)->on();
+                    qgraphicsitem_cast<Site *>(child)->update();
+                }
+            }
         }
     }
 
@@ -1954,6 +2022,8 @@ void MainWindow::stepForward()
         simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
         simulationStatus->setAlignment(Qt::AlignLeft);
         simulationStatus->setTextColor(Qt::blue);
+        simulationStatus->append("Rand: "+QString::number(ran2));
+        simulationStatus->append(" ");
         simulationStatus->append("Residence time (s):");
         simulationStatus->append(" ");
         simulationStatus->setTextColor(Qt::black);

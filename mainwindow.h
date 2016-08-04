@@ -74,6 +74,7 @@ private slots:
     void endModCBChanged();
     void setTemp(int tmp);
     void setSeed(int isd);
+    void simDetailChanged();
 
     void startKMC();
     void stopKMC();
