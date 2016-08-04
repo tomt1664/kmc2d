@@ -74,16 +74,19 @@ private slots:
     void endModCBChanged();
     void setTemp(int tmp);
     void setSeed(int isd);
+    void setDelay(double delay);
     void simDetailChanged();
+    void toggleRecord(bool on);
 
     void startKMC();
     void stopKMC();
     void stepForward();
-    void stepBack();
+    void resetSimulation();
 
     void closeEvent(QCloseEvent *event);
 
 private:
+    // set-up methods
     void createToolBox();
     void createActions();
     void createMenus();
@@ -154,7 +157,7 @@ private:
     QToolButton *startStopButton;
     QToolButton *rewindButton;
     QToolButton *forwardButton;
-    QToolButton *backButton;
+    QToolButton *resetButton;
     QToolButton *graphButton;
 
     QDoubleSpinBox *delaySpinBox;
@@ -164,18 +167,31 @@ private:
     QTextEdit *simulationStatus;
 
     //simulation parameters and lists
+    QTimer *timer; // animation timer
+    int stepDelay; //duration of each step (milliseconds)
     long nstep; // KMC step
     int pstep; // detail step
     int kmcDetail; // detail printing
     double m_temp; // simulation temperature
     double m_beta; // Boltzman factor
     double m_time; // simulation time
+    bool recordTraj;
 
     QList<QPointF> barPFList; // active barrier and PF list
     QList<double> rateList; // list of all the exit rates
     QList<QGraphicsItem *> transList; //list of transition pointers
     double rateTotal; // the sum of all the exit pathway rates
     QGraphicsItem *transPath; // the chosen path
+
+    // statistic records: time series
+    QList<QPointF> energySeries; // total energy
+    QList<int> coordSeries1; // coordination histogram
+    QList<int> coordSeries2;
+    QList<int> coordSeries3;
+    QList<int> coordSeries4;
+    QList<int> coordSeries5;
+    QList<int> coordSeries6;
+    QList<double> displaceSeries; // displacement list
 
     //periodic images
     int xcell; // x cell dimension

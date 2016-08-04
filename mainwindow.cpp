@@ -93,7 +93,8 @@ MainWindow::MainWindow()
     qsrand(123);
     nstep = 0;
     pstep = 1;
-    kmcDetail = 2;
+    kmcDetail = 1;
+    stepDelay = 1.0;
     setTemp(300);
 }
 
@@ -243,12 +244,20 @@ void MainWindow::toggleImages(bool on)
 //toggle the snap-to-grid function
 void MainWindow::toggleSnap(bool on)
 {
-    if(on)
-    {
+    if(on) {
         scene->setSnap(true);
-    } else
-    {
+    } else {
         scene->setSnap(false);
+    }
+}
+
+//toggle record trajectory
+void MainWindow::toggleRecord(bool on)
+{
+    if(on) {
+        recordTraj = true;
+    } else {
+        recordTraj = false;
     }
 }
 
@@ -1124,20 +1133,22 @@ void MainWindow::createToolBox()
     startStopButton->setIconSize(QSize(24, 24));
     startStopButton->setDefaultAction(startAction);
 
+    timer = new QTimer(this); // create timer
+
     rewindButton = new QToolButton;
     rewindButton->setIcon(QIcon(QPixmap(":/icons/rewind.png")));
     rewindButton->setIconSize(QSize(24,24));
     rewindButton->setToolTip("Rewind to beginning");
 
-    backButton = new QToolButton;
-    backButton->setIcon(QIcon(QPixmap(":/icons/back.png")));
-    backButton->setIconSize(QSize(24,24));
-    backButton->setToolTip("Step back");
+    resetButton = new QToolButton;
+    resetButton->setIcon(QIcon(QPixmap(":/icons/reset.png")));
+    resetButton->setIconSize(QSize(24,24));
+    resetButton->setToolTip("Step back");
 
     forwardButton = new QToolButton;
     forwardButton->setIcon(QIcon(QPixmap(":/icons/forward.png")));
     forwardButton->setIconSize(QSize(24,24));
-    forwardButton->setToolTip("Step forward");
+    forwardButton->setToolTip("Reset");
 
     recordButton = new QToolButton;
     recordButton->setIcon(QIcon(QPixmap(":/icons/record.png")));
@@ -1147,19 +1158,21 @@ void MainWindow::createToolBox()
     recordButton->setToolTip("Save trajectory");
 
     connect(forwardButton, SIGNAL(clicked()),this,SLOT(stepForward()));
-    connect(backButton, SIGNAL(clicked()),this,SLOT(stepBack()));
+    connect(resetButton, SIGNAL(clicked()),this,SLOT(resetSimulation()));
+    connect(recordButton, SIGNAL(toggled(bool)),this,SLOT(toggleRecord(bool)));
 
     simulationControls->addWidget(startStopButton);
     simulationControls->addStretch(0);
     simulationControls->addWidget(rewindButton);
     simulationControls->addStretch(0);
-    simulationControls->addWidget(backButton);
+    simulationControls->addWidget(resetButton);
     simulationControls->addStretch(0);
     simulationControls->addWidget(forwardButton);
     simulationControls->addStretch(0);
     simulationControls->addWidget(recordButton);
 
     QHBoxLayout *infoLayout = new QHBoxLayout;
+    connect(timer, SIGNAL(timeout()), this, SLOT(stepForward()));
 
     delaySpinBox = new QDoubleSpinBox;
     delaySpinBox->setRange(0,99);
@@ -1175,6 +1188,7 @@ void MainWindow::createToolBox()
 
     connect(detailComboBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(simDetailChanged()));
+    connect(delaySpinBox, SIGNAL(valueChanged(double)),this,SLOT(setDelay(double)));
 
     graphButton = new QToolButton;
     graphButton->setIcon(QIcon(QPixmap(":/icons/plot.png")));
@@ -1783,10 +1797,7 @@ void MainWindow::startKMC()
 {
     startStopButton->setDefaultAction(stopAction);
 
-    simulationStatus->clear();
-    simulationStatus->setTextBackgroundColor(Qt::white);
-    simulationStatus->setTextColor(Qt::blue);
-
+    timer->start(stepDelay);
 }
 
 //stop the KMC simulation
@@ -1794,9 +1805,7 @@ void MainWindow::stopKMC()
 {
     startStopButton->setDefaultAction(startAction);
 
-//    simulationStatus->setAlignment(Qt::AlignRight);
-
-
+    timer->stop();
 }
 
 //move the KMC simulation forward 1 step
@@ -1857,10 +1866,11 @@ void MainWindow::stepForward()
         }
         if(sceneEmpty) return;
         simulationStatus->clear();
+        if(kmcDetail == 2) pstep = 3;
     }
 
     //highlight exit barriers
-    if(pstep == 1) {
+    if(pstep == 1 && kmcDetail == 3) {
         foreach (QGraphicsItem *item, scene->items()) {
             if (item->type() == Site::Type) {
                 Site *site = qgraphicsitem_cast<Site *>(item);
@@ -1889,17 +1899,36 @@ void MainWindow::stepForward()
         }
     }
 
+    if(kmcDetail == 1) pstep = 2;
     if(pstep == 2) {
-        //print rates
-        simulationStatus->clear();
-        simulationStatus->setTextColor(Qt::blue);
-        simulationStatus->append("Rates (Hz):");
-        simulationStatus->append(" ");
-        simulationStatus->setTextColor(Qt::black);
-        foreach(double irate, rateList) {
-            QString prate = QString::number(irate);
-            simulationStatus->setAlignment(Qt::AlignRight);
-            simulationStatus->append(prate);
+        if(kmcDetail == 3) {
+            //print rates
+            simulationStatus->clear();
+            simulationStatus->setTextColor(Qt::blue);
+            simulationStatus->append("Rates (Hz):");
+            simulationStatus->append(" ");
+            simulationStatus->setTextColor(Qt::black);
+            foreach(double irate, rateList) {
+                QString prate = QString::number(irate);
+                simulationStatus->setAlignment(Qt::AlignRight);
+                simulationStatus->append(prate);
+            }
+            foreach (QGraphicsItem *item, scene->items()) {
+                if (item->type() == Site::Type) {
+                    Site *site = qgraphicsitem_cast<Site *>(item);
+                    if(site->stat()) {
+                        foreach(QGraphicsItem *titem, site->transList()) {
+                            Transition *trans = qgraphicsitem_cast<Transition *>(titem);
+                            if(!(trans->startItem()->stat() && trans->endItem()->stat())) {
+                                trans->stopHighlight();
+                                trans->update();
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            pstep = 3;
         }
     }
 
@@ -1926,35 +1955,35 @@ void MainWindow::stepForward()
             transProb += pathRate/rateTotal;
             icount++;
         }
-        qDebug() << icount;
-        simulationStatus->clear();
-        simulationStatus->setAlignment(Qt::AlignLeft);
-        simulationStatus->setTextColor(Qt::red);
-        simulationStatus->append("Rand: "+QString::number(ran1));
-        simulationStatus->setTextColor(Qt::black);
-        simulationStatus->append(" ");
-        int pcount = 0;
-        foreach(double irate, rateList) {
-            QString prate = QString::number(irate);
-            simulationStatus->setAlignment(Qt::AlignRight);
-            if(icount == pcount) {
-               simulationStatus->setTextBackgroundColor(Qt::red);
-            } else {
-               simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
+        if(kmcDetail > 1) {
+            simulationStatus->clear();
+            simulationStatus->setAlignment(Qt::AlignLeft);
+            simulationStatus->setTextColor(Qt::red);
+            simulationStatus->append("Rand: "+QString::number(ran1));
+            simulationStatus->setTextColor(Qt::black);
+            simulationStatus->append(" ");
+            int pcount = 0;
+            foreach(double irate, rateList) {
+                QString prate = QString::number(irate);
+                simulationStatus->setAlignment(Qt::AlignRight);
+                if(icount == pcount) {
+                    simulationStatus->setTextBackgroundColor(Qt::red);
+                } else {
+                    simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
+                }
+                simulationStatus->append(prate);
+                pcount++;
             }
-            simulationStatus->append(prate);
-            pcount++;
+            simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
+        } else {
+            pstep =4;
         }
-        simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
-
 
         qgraphicsitem_cast<Transition *>(transPath)->highlight();
         qgraphicsitem_cast<Transition *>(transPath)->update();
-
-
     }
 
-    //perform the transition
+    //perform the transition - taking into account the periodic boundaries
     if(pstep == 4) {
         if(qgraphicsitem_cast<Transition *>(transPath)->startItem()->stat()) {
             qgraphicsitem_cast<Transition *>(transPath)->startItem()->off();
@@ -2008,9 +2037,14 @@ void MainWindow::stepForward()
                 }
             }
         }
+        if(kmcDetail == 1) {
+            qgraphicsitem_cast<Transition *>(transPath)->startItem()->stopHighlight();
+            qgraphicsitem_cast<Transition *>(transPath)->endItem()->stopHighlight();
+        }
     }
 
     //update time
+    if(kmcDetail == 1) pstep = 5;
     if(pstep == 5) {
         qgraphicsitem_cast<Transition *>(transPath)->stopHighlight();
         qgraphicsitem_cast<Transition *>(transPath)->update();
@@ -2018,18 +2052,20 @@ void MainWindow::stepForward()
         double timeInt;
         double ran2 = qrand()*1.0/RAND_MAX;
         timeInt = -qLn(ran2)/rateTotal;
-        simulationStatus->clear();
-        simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
-        simulationStatus->setAlignment(Qt::AlignLeft);
-        simulationStatus->setTextColor(Qt::blue);
-        simulationStatus->append("Rand: "+QString::number(ran2));
-        simulationStatus->append(" ");
-        simulationStatus->append("Residence time (s):");
-        simulationStatus->append(" ");
-        simulationStatus->setTextColor(Qt::black);
-        simulationStatus->setAlignment(Qt::AlignLeft);
-        simulationStatus->append(QString::number(timeInt));
-        simulationStatus->setAlignment(Qt::AlignRight);
+        if(kmcDetail > 1) {
+            simulationStatus->clear();
+            simulationStatus->setTextBackgroundColor(QColor(238,238,238,255));
+            simulationStatus->setAlignment(Qt::AlignLeft);
+            simulationStatus->setTextColor(Qt::blue);
+            simulationStatus->append("Rand: "+QString::number(ran2));
+            simulationStatus->append(" ");
+            simulationStatus->append("Residence time (s):");
+            simulationStatus->append(" ");
+            simulationStatus->setTextColor(Qt::black);
+            simulationStatus->setAlignment(Qt::AlignLeft);
+            simulationStatus->append(QString::number(timeInt));
+            simulationStatus->setAlignment(Qt::AlignRight);
+        }
         m_time += timeInt;
         simulationTime->clear();
         simulationTime->setText(QString::number(m_time));
@@ -2039,9 +2075,26 @@ void MainWindow::stepForward()
     if(pstep > 5) pstep = 1;
 }
 
-//move the simulation back one step
-void MainWindow::stepBack()
+//reset - time to zero, unhighlight everything and clear record arrays
+void MainWindow::resetSimulation()
 {
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Site::Type) {
+        Site *site = qgraphicsitem_cast<Site *>(item);
+        site->stopHighlight();
+        site->update();
+        foreach(QGraphicsItem *titem, site->transList()) {
+            Transition *trans = qgraphicsitem_cast<Transition *>(titem);
+            trans->stopHighlight();
+            trans->update();
+        }
+        }
+    }
+    m_time = 0.0;
+    simulationStatus->clear();
+    simulationTime->clear();
+    simulationTime->setText(QString::number(m_time));
+    energySeries.clear();
 
 }
 
@@ -2058,4 +2111,12 @@ void MainWindow::setSeed(int isd)
     qsrand(isd);
     nstep = 0;
     pstep = 1;
+}
+
+//set the animation delay
+void MainWindow::setDelay(double delay)
+{
+    //step delay in milliseconds
+    stepDelay = int(delay*1000);
+    if(stepDelay < 40) stepDelay = 40;
 }

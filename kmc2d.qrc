@@ -25,5 +25,6 @@
         <file>icons/plot.png</file>
         <file>icons/list.png</file>
         <file>icons/record.png</file>
+        <file>icons/reset.png</file>
     </qresource>
 </RCC>
