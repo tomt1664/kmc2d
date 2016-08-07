@@ -1158,6 +1158,7 @@ void MainWindow::createToolBox()
     recordButton->setToolTip("Save trajectory");
 
     connect(forwardButton, SIGNAL(clicked()),this,SLOT(stepForward()));
+    connect(rewindButton, SIGNAL(clicked()),this,SLOT(rewindSimulation()));
     connect(resetButton, SIGNAL(clicked()),this,SLOT(resetSimulation()));
     connect(recordButton, SIGNAL(toggled(bool)),this,SLOT(toggleRecord(bool)));
 
@@ -1804,7 +1805,6 @@ void MainWindow::startKMC()
 void MainWindow::stopKMC()
 {
     startStopButton->setDefaultAction(startAction);
-
     timer->stop();
 }
 
@@ -2072,7 +2072,44 @@ void MainWindow::stepForward()
     }
 
     pstep++;
-    if(pstep > 5) pstep = 1;
+    if(pstep > 5) {
+        pstep = 1;
+        nstep++;
+    }
+
+    //at the initial step - save the configuration
+    if(nstep == 1 && pstep == 1) {
+        initConf.clear();
+        qDebug() << "setup";
+        foreach (QGraphicsItem *item, scene->items()) {
+            if (item->type() == Site::Type) {
+                Site *site = qgraphicsitem_cast<Site *>(item);
+                initConf.append(site->stat());
+                qDebug() << site->stat();
+            }
+        }
+        qDebug() << "size " << initConf.size();
+    }
+}
+
+//rewind - set configuration to that recorded in initConfig
+void MainWindow::rewindSimulation()
+{
+    int count = 0;
+    qDebug() << "rewind";
+    foreach (QGraphicsItem *item, scene->items()) {
+        if (item->type() == Site::Type) {
+            Site *site = qgraphicsitem_cast<Site *>(item);
+            if(initConf[count] == 0) {
+                site->off();
+            } else {
+                site->on();
+            }
+            qDebug() << site->stat();
+            count++;
+        }
+    }
+    resetSimulation();
 }
 
 //reset - time to zero, unhighlight everything and clear record arrays
@@ -2095,7 +2132,15 @@ void MainWindow::resetSimulation()
     simulationTime->clear();
     simulationTime->setText(QString::number(m_time));
     energySeries.clear();
-
+    coordSeries1.clear();
+    coordSeries2.clear();
+    coordSeries3.clear();
+    coordSeries4.clear();
+    coordSeries5.clear();
+    coordSeries6.clear();
+    displaceSeries.clear();
+    nstep = 0;
+    pstep = 1;
 }
 
 //set the temperature
@@ -2109,8 +2154,7 @@ void MainWindow::setTemp(int tmp)
 void MainWindow::setSeed(int isd)
 {
     qsrand(isd);
-    nstep = 0;
-    pstep = 1;
+    resetSimulation();
 }
 
 //set the animation delay

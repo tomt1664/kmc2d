@@ -82,6 +82,7 @@ private slots:
     void stopKMC();
     void stepForward();
     void resetSimulation();
+    void rewindSimulation();
 
     void closeEvent(QCloseEvent *event);
 
@@ -182,8 +183,9 @@ private:
     QList<QGraphicsItem *> transList; //list of transition pointers
     double rateTotal; // the sum of all the exit pathway rates
     QGraphicsItem *transPath; // the chosen path
+    QList<int> initConf; // the initial site configuration
 
-    // statistic records: time series
+    // statistics: time series
     QList<QPointF> energySeries; // total energy
     QList<int> coordSeries1; // coordination histogram
     QList<int> coordSeries2;

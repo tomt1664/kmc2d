@@ -21,7 +21,7 @@ ConfigScene::ConfigScene(QMenu *siteMenu, QMenu *transMenu, int xc, int yc, QObj
 {
     mySiteMenu = siteMenu;
     myTransMenu = transMenu;
-    myMode = MoveItem;
+    myMode = InsertUSite;
     line = 0;
     myItemColor = Qt::white;
     myLineColor = Qt::black;
