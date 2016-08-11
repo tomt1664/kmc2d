@@ -13,6 +13,8 @@
 #include "mainwindow.h"
 #include "cellsizedialog.h"
 #include "expanddialog.h"
+#include "plotwindow.h"
+#include "qcustomplot.h"
 
 #include <QtWidgets>
 #include <QDebug>
@@ -96,6 +98,7 @@ MainWindow::MainWindow()
     kmcDetail = 1;
     stepDelay = 1.0;
     setTemp(300);
+    m_energy = 0.0;
 }
 
 //delete item
@@ -1196,6 +1199,8 @@ void MainWindow::createToolBox()
     graphButton->setIconSize(QSize(24,24));
     graphButton->setToolTip("Data plot");
 
+    connect(graphButton, SIGNAL(clicked(bool)),this,SLOT(openGraphBox()));
+
     QLabel *listicon = new QLabel();
     listicon->setPixmap(QPixmap(":/icons/list.png"));
     listicon->setToolTip("Output detail");
@@ -1797,7 +1802,6 @@ void MainWindow::exportSVG()
 void MainWindow::startKMC()
 {
     startStopButton->setDefaultAction(stopAction);
-
     timer->start(stepDelay);
 }
 
@@ -1811,8 +1815,22 @@ void MainWindow::stopKMC()
 //move the KMC simulation forward 1 step
 void MainWindow::stepForward()
 {
-    // create energy and rate list
+    //at the initial step - save the configuration
+    if(nstep == 0 && pstep == 1) {
+        initConf.clear();
+        int count = 0;
+        foreach (QGraphicsItem *item, scene->items()) {
+            if (item->type() == Site::Type) {
+                Site *site = qgraphicsitem_cast<Site *>(item);
+                initConf.append(site->stat());
+                count++;
+            }
+        }
+    }
+
+    // create energy and rate list and save energy
     if(pstep == 1) {
+        m_energy = 0.0;
         barPFList.clear();
         rateList.clear();
         transList.clear();
@@ -1836,6 +1854,7 @@ void MainWindow::stepForward()
                 if(coordination > 0) {
                     mod_en = site->nnMod(coordination);
                 }
+                m_energy += site_en - mod_en;
                 foreach(QGraphicsItem *titem, site->transList()) {
                     sceneEmpty = false;
                     Transition *trans = qgraphicsitem_cast<Transition *>(titem);
@@ -1866,6 +1885,8 @@ void MainWindow::stepForward()
         }
         if(sceneEmpty) return;
         simulationStatus->clear();
+        energySeries.append(m_energy);
+        timeSeries.append(m_time);
         if(kmcDetail == 2) pstep = 3;
     }
 
@@ -2076,36 +2097,22 @@ void MainWindow::stepForward()
         pstep = 1;
         nstep++;
     }
-
-    //at the initial step - save the configuration
-    if(nstep == 1 && pstep == 1) {
-        initConf.clear();
-        qDebug() << "setup";
-        foreach (QGraphicsItem *item, scene->items()) {
-            if (item->type() == Site::Type) {
-                Site *site = qgraphicsitem_cast<Site *>(item);
-                initConf.append(site->stat());
-                qDebug() << site->stat();
-            }
-        }
-        qDebug() << "size " << initConf.size();
-    }
 }
 
 //rewind - set configuration to that recorded in initConfig
 void MainWindow::rewindSimulation()
 {
     int count = 0;
-    qDebug() << "rewind";
     foreach (QGraphicsItem *item, scene->items()) {
         if (item->type() == Site::Type) {
             Site *site = qgraphicsitem_cast<Site *>(item);
             if(initConf[count] == 0) {
                 site->off();
+                site->update();
             } else {
                 site->on();
+                site->update();
             }
-            qDebug() << site->stat();
             count++;
         }
     }
@@ -2131,6 +2138,7 @@ void MainWindow::resetSimulation()
     simulationStatus->clear();
     simulationTime->clear();
     simulationTime->setText(QString::number(m_time));
+    timeSeries.clear();
     energySeries.clear();
     coordSeries1.clear();
     coordSeries2.clear();
@@ -2139,6 +2147,7 @@ void MainWindow::resetSimulation()
     coordSeries5.clear();
     coordSeries6.clear();
     displaceSeries.clear();
+    m_energy = 0.0;
     nstep = 0;
     pstep = 1;
 }
@@ -2163,4 +2172,14 @@ void MainWindow::setDelay(double delay)
     //step delay in milliseconds
     stepDelay = int(delay*1000);
     if(stepDelay < 40) stepDelay = 40;
+}
+
+//open window to plot simulation vectors
+void MainWindow::openGraphBox()
+{
+    startStopButton->setDefaultAction(startAction);
+    timer->stop();
+
+    PlotWindow *plotwindow = new PlotWindow(energySeries,timeSeries);
+    plotwindow->show();
 }

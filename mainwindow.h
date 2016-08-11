@@ -83,6 +83,7 @@ private slots:
     void stepForward();
     void resetSimulation();
     void rewindSimulation();
+    void openGraphBox();
 
     void closeEvent(QCloseEvent *event);
 
@@ -176,6 +177,7 @@ private:
     double m_temp; // simulation temperature
     double m_beta; // Boltzman factor
     double m_time; // simulation time
+    double m_energy; // instantaneous energy
     bool recordTraj;
 
     QList<QPointF> barPFList; // active barrier and PF list
@@ -186,7 +188,8 @@ private:
     QList<int> initConf; // the initial site configuration
 
     // statistics: time series
-    QList<QPointF> energySeries; // total energy
+    QList<double> timeSeries; // record if time steps
+    QList<double> energySeries; // total energy
     QList<int> coordSeries1; // coordination histogram
     QList<int> coordSeries2;
     QList<int> coordSeries3;

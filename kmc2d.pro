@@ -7,7 +7,9 @@ HEADERS	    =   mainwindow.h \
 		trans.h \
     cellsizedialog.h \
     expanddialog.h \
-    curvedisplay.h
+    curvedisplay.h \
+    plotwindow.h \
+    qcustomplot.h
 SOURCES	    =   mainwindow.cpp \
 		latsite.cpp \
 		main.cpp \
@@ -15,7 +17,9 @@ SOURCES	    =   mainwindow.cpp \
 		configscene.cpp \
     cellsizedialog.cpp \
     expanddialog.cpp \
-    curvedisplay.cpp
+    curvedisplay.cpp \
+    plotwindow.cpp \
+    qcustomplot.cpp
 RESOURCES   =	kmc2d.qrc
 
 
