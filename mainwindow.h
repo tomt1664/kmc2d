@@ -188,15 +188,15 @@ private:
     QList<int> initConf; // the initial site configuration
 
     // statistics: time series
-    QList<double> timeSeries; // record if time steps
-    QList<double> energySeries; // total energy
-    QList<int> coordSeries1; // coordination histogram
-    QList<int> coordSeries2;
-    QList<int> coordSeries3;
-    QList<int> coordSeries4;
-    QList<int> coordSeries5;
-    QList<int> coordSeries6;
-    QList<double> displaceSeries; // displacement list
+    QVector<double> timeSeries; // record if time steps
+    QVector<double> energySeries; // total energy
+    QVector<int> coordSeries1; // coordination histogram
+    QVector<int> coordSeries2;
+    QVector<int> coordSeries3;
+    QVector<int> coordSeries4;
+    QVector<int> coordSeries5;
+    QVector<int> coordSeries6;
+    QVector<double> displaceSeries; // displacement list
 
     //periodic images
     int xcell; // x cell dimension

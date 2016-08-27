@@ -11,7 +11,7 @@ class PlotWindow : public QWidget   //plotting
     Q_OBJECT
 
 public:
-    PlotWindow(QList<double>& energy, QList<double> time);
+    PlotWindow(QVector<double>& energy, QVector<double>& time);
 
 private slots:
     void okButtonPress();

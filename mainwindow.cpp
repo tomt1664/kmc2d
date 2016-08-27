@@ -2181,5 +2181,6 @@ void MainWindow::openGraphBox()
     timer->stop();
 
     PlotWindow *plotwindow = new PlotWindow(energySeries,timeSeries);
+    plotwindow->setGeometry(100,100,600,400);
     plotwindow->show();
 }
