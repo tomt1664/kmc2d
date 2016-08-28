@@ -14,69 +14,66 @@
 #include "plotwindow.h"
 #include "qcustomplot.h"
 
-PlotWindow::PlotWindow(QVector<double>& energy, QVector<double>& time)
+PlotWindow::PlotWindow(QVector<double>& energy, QVector<double>& time, QVector<double>& xDisp,
+                       QVector<double>& yDisp, QVector<double>& sDisp)
 {
     customPlot = new QCustomPlot(this);
     // add two new graphs and set their look:
     customPlot->addGraph();
-    customPlot->graph(0)->setPen(QPen(Qt::blue)); // line color blue for first graph
-//    customPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
-//    customPlot->addGraph();
-//    customPlot->graph(1)->setPen(QPen(Qt::red)); // line color red for second graph
-    // generate some points of data (y0 for first, y1 for second graph):
-//    QVector<double> x(250), y0(250), y1(250);
-//    for (int i=0; i<250; ++i)
-//    {
-//      x[i] = i;
-//      y0[i] = qExp(-i/150.0)*qCos(i/10.0); // exponentially decaying cosine
-//      y1[i] = qExp(-i/150.0);              // exponential envelope
-//    }
-    // configure right and top axis to show ticks but no labels:
-    // (see QCPAxisRect::setupFullAxesBox for a quicker method to do this)
+    customPlot->graph(0)->setPen(QPen(Qt::red)); // line color blue for first graph
+
     customPlot->xAxis2->setVisible(true);
     customPlot->xAxis2->setTickLabels(false);
     customPlot->yAxis2->setVisible(true);
     customPlot->yAxis2->setTickLabels(false);
-    // make left and bottom axes always transfer their ranges to right and top axes:
+
     connect(customPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->xAxis2, SLOT(setRange(QCPRange)));
     connect(customPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->yAxis2, SLOT(setRange(QCPRange)));
     // pass data points to graphs:
     customPlot->graph(0)->setData(time, energy);
-//    customPlot->graph(1)->setData(x, y1);
-    // let the ranges scale themselves so graph 0 fits perfectly in the visible area:
-    customPlot->graph(0)->rescaleAxes();
-    // same thing for graph 1, but only enlarge ranges (in case graph 1 is smaller than graph 0):
-//    customPlot->graph(1)->rescaleAxes(true);
-    // Note: we could have also just called customPlot->rescaleAxes(); instead
-    // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
-    customPlot->setMinimumWidth(400);
-    customPlot->setMinimumHeight(300);
+    customPlot->setMinimumWidth(600);
+    customPlot->setMinimumHeight(400);
 
-    okButton = new QPushButton(tr("OK"));
+    saveButton = new QPushButton(tr("Save Image"));
+    exportButton = new QPushButton(tr("Export Data"));
     cancelButton = new QPushButton(tr("Cancel"));
 
+    plotType = new QComboBox;
+    plotType->addItem("Energy");
+    plotType->addItem("x-Displacement");
+    plotType->addItem("y-Displacement");
+    plotType->addItem("Sq. Displacement");
+    plotType->setToolTip("Plot type");
+
     QHBoxLayout *buttonLayout = new QHBoxLayout;
-    buttonLayout->addWidget(okButton);
-    buttonLayout->addSpacing(50);
+    buttonLayout->addWidget(plotType);
+    buttonLayout->addStretch(0);
+    buttonLayout->addWidget(saveButton);
+    buttonLayout->addStretch(0);
+    buttonLayout->addWidget(exportButton);
+    buttonLayout->addStretch(0);
     buttonLayout->addWidget(cancelButton);
 
     QVBoxLayout *plotLayout = new QVBoxLayout;
     plotLayout->addWidget(customPlot);
-    plotLayout->addSpacing(100);
+    plotLayout->addSpacing(30);
     plotLayout->addLayout(buttonLayout);
-    plotLayout->addSpacing(100);
+    plotLayout->addSpacing(10);
 
     setLayout(plotLayout);
 
-    connect(okButton, SIGNAL(clicked()), this, SLOT(okButtonPress()));
+    connect(saveButton, SIGNAL(clicked()), this, SLOT(okButtonPress()));
     connect(cancelButton, SIGNAL(clicked()), this, SLOT(cancelButtonPress()));
+    connect(exportButton, SIGNAL(clicked()), this, SLOT(exportButtonPress()));
+    connect(plotType, SIGNAL(currentIndexChanged(int)), this,
+            SLOT(setPlotType(energy,time,xDisp, yDisp, sDisp)));
 
-    setWindowTitle(tr("Trajectory"));
+    setWindowTitle(tr("Trajectory Plot"));
 }
 
-void PlotWindow::okButtonPress()
+void PlotWindow::saveButtonPress()
 {
     close();
 }
@@ -84,6 +81,33 @@ void PlotWindow::okButtonPress()
 void PlotWindow::cancelButtonPress()
 {
     close();
+}
+
+void PlotWindow::exportButtonPress()
+{
+    close();
+}
+
+void PlotWindow::setPlotType(QVector<double>& energy, QVector<double>& time,
+                             QVector<double>& xDisp, QVector<double>& yDisp, QVector<double>& sDisp)
+{
+    customPlot->clearGraphs();
+    int ptype = plotType->currentIndex();
+
+    customPlot->addGraph();
+    if(ptype == 0) {
+        customPlot->graph(0)->setPen(QPen(Qt::red));
+        customPlot->graph(0)->setData(time, energy);
+    } else if(ptype == 1) {
+        customPlot->graph(0)->setPen(QPen(Qt::black));
+        customPlot->graph(0)->setData(time, xDisp);
+    } else if(ptype == 2) {
+        customPlot->graph(0)->setPen(QPen(Qt::black));
+        customPlot->graph(0)->setData(time, yDisp);
+    } else if(ptype == 3) {
+        customPlot->graph(0)->setPen(QPen(Qt::blue));
+        customPlot->graph(0)->setData(time, sDisp);
+    }
 }
 
 

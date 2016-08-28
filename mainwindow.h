@@ -196,7 +196,9 @@ private:
     QVector<int> coordSeries4;
     QVector<int> coordSeries5;
     QVector<int> coordSeries6;
-    QVector<double> displaceSeries; // displacement list
+    QVector<double> displaceXSeries; // displacement list
+    QVector<double> displaceYSeries; // displacement list
+    QVector<double> displaceSquared; // displacement list
 
     //periodic images
     int xcell; // x cell dimension

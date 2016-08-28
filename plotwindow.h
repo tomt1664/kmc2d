@@ -15,20 +15,26 @@
 #include <QLineEdit>
 #include <qcustomplot.h>
 
-class PlotWindow : public QWidget   //plotting
+class PlotWindow : public QWidget   // plotting graph for simulation output
 {
     Q_OBJECT
 
 public:
-    PlotWindow(QVector<double>& energy, QVector<double>& time);
+    PlotWindow(QVector<double>& energy, QVector<double>& time, QVector<double>& xDisp,
+               QVector<double>& yDisp, QVector<double>& sDisp);
 
 private slots:
-    void okButtonPress();
+    void saveButtonPress();
+    void exportButtonPress();
     void cancelButtonPress();
+    void setPlotType(QVector<double>& energy, QVector<double>& time, QVector<double>& xDisp,
+                     QVector<double>& yDisp, QVector<double>& sDisp);
 
 private:
-    QPushButton *okButton;
+    QPushButton *saveButton;
     QPushButton *cancelButton;
+    QPushButton *exportButton;
+    QComboBox *plotType;
     QCustomPlot *customPlot;
 };
 

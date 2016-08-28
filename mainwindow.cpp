@@ -14,7 +14,6 @@
 #include "cellsizedialog.h"
 #include "expanddialog.h"
 #include "plotwindow.h"
-#include "plotbox.h"
 #include "qcustomplot.h"
 
 #include <QtWidgets>
@@ -2005,11 +2004,14 @@ void MainWindow::stepForward()
         qgraphicsitem_cast<Transition *>(transPath)->update();
     }
 
+    QPointF startPos, endPos;
     //perform the transition - taking into account the periodic boundaries
     if(pstep == 4) {
         if(qgraphicsitem_cast<Transition *>(transPath)->startItem()->stat()) {
             qgraphicsitem_cast<Transition *>(transPath)->startItem()->off();
             qgraphicsitem_cast<Transition *>(transPath)->startItem()->update();
+            startPos = qgraphicsitem_cast<Transition *>(transPath)->startItem()->scenePos();
+            endPos = qgraphicsitem_cast<Transition *>(transPath)->endItem()->scenePos();
             foreach (QGraphicsItem *child, qgraphicsitem_cast<Transition *>(transPath)->startItem()->childItems()) {
                 qgraphicsitem_cast<Site *>(child)->off();
                 qgraphicsitem_cast<Site *>(child)->update();
@@ -2036,6 +2038,8 @@ void MainWindow::stepForward()
         } else {
             qgraphicsitem_cast<Transition *>(transPath)->endItem()->off();
             qgraphicsitem_cast<Transition *>(transPath)->endItem()->update();
+            endPos = qgraphicsitem_cast<Transition *>(transPath)->startItem()->scenePos();
+            startPos = qgraphicsitem_cast<Transition *>(transPath)->endItem()->scenePos();
             foreach (QGraphicsItem *child, qgraphicsitem_cast<Transition *>(transPath)->endItem()->childItems()) {
                 qgraphicsitem_cast<Site *>(child)->off();
                 qgraphicsitem_cast<Site *>(child)->update();
@@ -2064,6 +2068,21 @@ void MainWindow::stepForward()
             qgraphicsitem_cast<Transition *>(transPath)->endItem()->stopHighlight();
         }
     }
+
+    // record displacement
+    float xDisplacement;
+    float yDisplacement;
+    if(nstep == 0) {
+        xDisplacement = endPos.x() - startPos.x();
+        yDisplacement = endPos.y() - startPos.y();
+    } else {
+        xDisplacement = endPos.x() - startPos.x() + displaceXSeries.last();
+        yDisplacement = endPos.y() - startPos.y() + displaceYSeries.last();
+    }
+    float sDisplacement = xDisplacement*xDisplacement + yDisplacement*yDisplacement;
+    displaceXSeries.append(xDisplacement);
+    displaceYSeries.append(yDisplacement);
+    displaceSquared.append(sDisplacement);
 
     //update time
     if(kmcDetail == 1) pstep = 5;
@@ -2147,7 +2166,9 @@ void MainWindow::resetSimulation()
     coordSeries4.clear();
     coordSeries5.clear();
     coordSeries6.clear();
-    displaceSeries.clear();
+    displaceXSeries.clear();
+    displaceYSeries.clear();
+    displaceSquared.clear();
     m_energy = 0.0;
     nstep = 0;
     pstep = 1;
@@ -2181,7 +2202,6 @@ void MainWindow::openGraphBox()
     startStopButton->setDefaultAction(startAction);
     timer->stop();
 
-    PlotWindow *plotwindow = new PlotWindow(energySeries,timeSeries);
-//    plotbox->setGeometry(100,100,600,400);
+    PlotWindow *plotwindow = new PlotWindow(energySeries,timeSeries,displaceXSeries,displaceYSeries,displaceSquared);
     plotwindow->show();
 }
