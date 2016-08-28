@@ -1,3 +1,12 @@
+/****************************************************************************
+** KMC2D: A 2D lattice kinetic Monte Carlo model constructor and simulator
+**
+** Built using Qt 5.6
+**
+** Tom Trevethan 2016
+** tptrevethan@googlemail.com
+****************************************************************************/
+
 #ifndef PLOTWINDOW_H
 #define PLOTWINDOW_H
 
@@ -18,9 +27,9 @@ private slots:
     void cancelButtonPress();
 
 private:
-    QCustomPlot *customPlot;
     QPushButton *okButton;
     QPushButton *cancelButton;
+    QCustomPlot *customPlot;
 };
 
 #endif // PLOTWINDOW_H

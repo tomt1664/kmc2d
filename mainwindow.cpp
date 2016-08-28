@@ -14,6 +14,7 @@
 #include "cellsizedialog.h"
 #include "expanddialog.h"
 #include "plotwindow.h"
+#include "plotbox.h"
 #include "qcustomplot.h"
 
 #include <QtWidgets>
@@ -2181,6 +2182,6 @@ void MainWindow::openGraphBox()
     timer->stop();
 
     PlotWindow *plotwindow = new PlotWindow(energySeries,timeSeries);
-    plotwindow->setGeometry(100,100,600,400);
+//    plotbox->setGeometry(100,100,600,400);
     plotwindow->show();
 }

@@ -51,21 +51,22 @@ PlotWindow::PlotWindow(QVector<double>& energy, QVector<double>& time)
     // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
-    QGroupBox *buttonGroup = new QGroupBox;
+    customPlot->setMinimumWidth(400);
+    customPlot->setMinimumHeight(300);
 
     okButton = new QPushButton(tr("OK"));
     cancelButton = new QPushButton(tr("Cancel"));
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     buttonLayout->addWidget(okButton);
-    buttonLayout->addStretch(0);
+    buttonLayout->addSpacing(50);
     buttonLayout->addWidget(cancelButton);
-    buttonGroup->setLayout(buttonLayout);
 
     QVBoxLayout *plotLayout = new QVBoxLayout;
     plotLayout->addWidget(customPlot);
-    plotLayout->addSpacing(20);
+    plotLayout->addSpacing(100);
     plotLayout->addLayout(buttonLayout);
+    plotLayout->addSpacing(100);
 
     setLayout(plotLayout);
 
@@ -84,4 +85,5 @@ void PlotWindow::cancelButtonPress()
 {
     close();
 }
+
 
