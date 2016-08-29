@@ -2073,11 +2073,11 @@ void MainWindow::stepForward()
     float xDisplacement;
     float yDisplacement;
     if(nstep == 0) {
-        xDisplacement = endPos.x() - startPos.x();
-        yDisplacement = endPos.y() - startPos.y();
+        xDisplacement = (endPos.x() - startPos.x())*0.1;
+        yDisplacement = (endPos.y() - startPos.y())*0.1;
     } else {
-        xDisplacement = endPos.x() - startPos.x() + displaceXSeries.last();
-        yDisplacement = endPos.y() - startPos.y() + displaceYSeries.last();
+        xDisplacement = (endPos.x() - startPos.x())*0.1 + displaceXSeries.last();
+        yDisplacement = (endPos.y() - startPos.y())*0.1 + displaceYSeries.last();
     }
     float sDisplacement = xDisplacement*xDisplacement + yDisplacement*yDisplacement;
     displaceXSeries.append(xDisplacement);
@@ -2202,6 +2202,7 @@ void MainWindow::openGraphBox()
     startStopButton->setDefaultAction(startAction);
     timer->stop();
 
-    PlotWindow *plotwindow = new PlotWindow(energySeries,timeSeries,displaceXSeries,displaceYSeries,displaceSquared);
+    PlotWindow *plotwindow = new PlotWindow(&energySeries,&timeSeries,
+                                            &displaceXSeries,&displaceYSeries,&displaceSquared);
     plotwindow->show();
 }

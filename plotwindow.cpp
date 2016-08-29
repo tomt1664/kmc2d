@@ -14,9 +14,15 @@
 #include "plotwindow.h"
 #include "qcustomplot.h"
 
-PlotWindow::PlotWindow(QVector<double>& energy, QVector<double>& time, QVector<double>& xDisp,
-                       QVector<double>& yDisp, QVector<double>& sDisp)
+PlotWindow::PlotWindow(QVector<double> *e1, QVector<double> *t1,
+                       QVector<double> *x1, QVector<double> *y1, QVector<double> *s1)
 {
+    time = t1;
+    energy = e1;
+    xDisp = x1;
+    yDisp = y1;
+    sDisp = s1;
+
     customPlot = new QCustomPlot(this);
     // add two new graphs and set their look:
     customPlot->addGraph();
@@ -30,7 +36,7 @@ PlotWindow::PlotWindow(QVector<double>& energy, QVector<double>& time, QVector<d
     connect(customPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->xAxis2, SLOT(setRange(QCPRange)));
     connect(customPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), customPlot->yAxis2, SLOT(setRange(QCPRange)));
     // pass data points to graphs:
-    customPlot->graph(0)->setData(time, energy);
+    customPlot->graph(0)->setData(*time, *energy);
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
     customPlot->setMinimumWidth(600);
@@ -64,23 +70,52 @@ PlotWindow::PlotWindow(QVector<double>& energy, QVector<double>& time, QVector<d
 
     setLayout(plotLayout);
 
-    connect(saveButton, SIGNAL(clicked()), this, SLOT(okButtonPress()));
+    connect(saveButton, SIGNAL(clicked()), this, SLOT(saveButtonPress()));
     connect(cancelButton, SIGNAL(clicked()), this, SLOT(cancelButtonPress()));
     connect(exportButton, SIGNAL(clicked()), this, SLOT(exportButtonPress()));
     connect(plotType, SIGNAL(currentIndexChanged(int)), this,
-            SLOT(setPlotType(energy,time,xDisp, yDisp, sDisp)));
+            SLOT(setPlotType()));
 
     setWindowTitle(tr("Trajectory Plot"));
 }
 
 void PlotWindow::saveButtonPress()
 {
-    close();
+    QString savefile = QFileDialog::getSaveFileName(this, "Save plot as PDF",
+                                                    QString(),
+                                                    "PDF Files (*.pdf)");
+
+    if (!savefile.isNull()) {
+        customPlot->savePdf(savefile,false,0,0,"KMC2D","ExportedData");
+    }
 }
 
 void PlotWindow::cancelButtonPress()
 {
-    close();
+    QString savefile = QFileDialog::getSaveFileName(this, "Export plot data",
+                                                    QString(),
+                                                    "DAT Files (*.dat)");
+
+    if (!savefile.isNull()) {
+
+        QFile sfile(savefile);
+        if (sfile.open(QFile::WriteOnly | QFile::Truncate))
+        {
+            QTextStream out(&sfile);
+            out << "Time Energy xDisp yDisp Sq.Disp\n";
+            for(int count = 0; count < time->size(); count++) {
+               out << time->value(count) << " " << energy->value(count) << " " << xDisp->value(count) << " " <<
+                      yDisp->value(count) << " " << sDisp->value(count) << "\n";
+            }
+            sfile.close();
+        } else
+        {
+            QMessageBox msgbox;
+            msgbox.setText("Error writing data file");
+            msgbox.exec();
+            return;
+        }
+    }
 }
 
 void PlotWindow::exportButtonPress()
@@ -88,25 +123,27 @@ void PlotWindow::exportButtonPress()
     close();
 }
 
-void PlotWindow::setPlotType(QVector<double>& energy, QVector<double>& time,
-                             QVector<double>& xDisp, QVector<double>& yDisp, QVector<double>& sDisp)
+void PlotWindow::setPlotType()
 {
-    customPlot->clearGraphs();
     int ptype = plotType->currentIndex();
 
     customPlot->addGraph();
     if(ptype == 0) {
+        customPlot->graph(0)->clearData();
         customPlot->graph(0)->setPen(QPen(Qt::red));
-        customPlot->graph(0)->setData(time, energy);
+        customPlot->graph(0)->setData(*time, *energy);
     } else if(ptype == 1) {
+        customPlot->graph(0)->clearData();
         customPlot->graph(0)->setPen(QPen(Qt::black));
-        customPlot->graph(0)->setData(time, xDisp);
+        customPlot->graph(0)->setData(*time, *xDisp);
     } else if(ptype == 2) {
+        customPlot->graph(0)->clearData();
         customPlot->graph(0)->setPen(QPen(Qt::black));
-        customPlot->graph(0)->setData(time, yDisp);
+        customPlot->graph(0)->setData(*time, *yDisp);
     } else if(ptype == 3) {
+        customPlot->graph(0)->clearData();
         customPlot->graph(0)->setPen(QPen(Qt::blue));
-        customPlot->graph(0)->setData(time, sDisp);
+        customPlot->graph(0)->setData(*time, *sDisp);
     }
 }
 
