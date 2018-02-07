@@ -90,7 +90,7 @@ void PlotWindow::saveButtonPress()
     }
 }
 
-void PlotWindow::cancelButtonPress()
+void PlotWindow::exportButtonPress()
 {
     QString savefile = QFileDialog::getSaveFileName(this, "Export plot data",
                                                     QString(),
@@ -118,7 +118,7 @@ void PlotWindow::cancelButtonPress()
     }
 }
 
-void PlotWindow::exportButtonPress()
+void PlotWindow::cancelButtonPress()
 {
     close();
 }
